@@ -1,0 +1,798 @@
+/* =====================================================
+   STAG — Main Stylesheet  |  Female Design
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── DESIGN TOKENS ───────────────────────────────── */
+:root {
+  --bg:       #0d0d1a;
+  --bg-deep:  #111118;
+  --bg-card:  #151521;
+  --red:      #e0302a;
+  --red-dark: #b52822;
+  --white:    #ffffff;
+  --muted:    rgba(255,255,255,0.55);
+  --border:   rgba(255,255,255,0.08);
+  --radius:   20px;
+}
+
+/* ── RESET ───────────────────────────────────────── */
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family: 'Poppins', sans-serif;
+  background: var(--bg);
+  color: var(--white);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+img { display:block; max-width:100%; height:auto; }
+a   { text-decoration:none; color:inherit; }
+
+/* ── HERO ────────────────────────────────────────── */
+/*
+   The stag_web_female.png design image is 2880 x 11200 (2x retina).
+   At 1440px viewport width it renders 1440 x 5600.
+   The hero portion occupies the top ~900 px of the scaled image.
+   background-size: cover + background-position: top fills the hero
+   viewport with just the crowd-scene / woman / logo area.
+*/
+/* ── NAVBAR ─────────────────────────────────────── */
+.s-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 52px;
+  background: rgba(13,13,26,0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.s-nav__logo img {
+  height: 34px;
+  width: auto;
+  display: block;
+}
+
+.s-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: nowrap;
+}
+
+.s-nav__links a {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.78);
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.s-nav__links a:hover { color: var(--red); }
+
+.s-nav__cta {
+  background: var(--red);
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  padding: 10px 24px;
+  border-radius: 50px;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.s-nav__cta:hover { background: var(--red-dark); }
+
+/* ── HAMBURGER (hidden on desktop) ───────────────── */
+.s-nav__burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.s-nav__burger:hover { background: rgba(224,48,42,0.12); }
+
+/* ── MOBILE DRAWER ───────────────────────────────── */
+.s-nav__drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  visibility: hidden;
+  pointer-events: none;
+}
+.s-nav__drawer.open {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Full-screen panel slides in from the left */
+.s-nav__drawer-panel {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-deep);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.s-nav__drawer.open .s-nav__drawer-panel { transform: translateX(0); }
+
+/* Red textured header with STAG logo */
+.s-nav__drawer-header {
+  position: relative;
+  background: url('http://65.0.179.165/red-texture.png') center / cover no-repeat,
+              var(--red-dark);
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 52px 24px 72px;
+  overflow: visible;
+}
+
+/* Torn dark edge — dark background bites upward into the red header */
+.s-nav__drawer-header::after {
+  content: '';
+  position: absolute;
+  bottom: -39px;
+  left: 0; right: 0;
+  height: 40px;
+  background: no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 1440 40' preserveAspectRatio='none'%3E%3Cpath fill='%23111118' d='M0%2C40 L0%2C18 L30%2C36 L60%2C10 L90%2C30 L120%2C8 L150%2C28 L180%2C4 L210%2C22 L240%2C2 L270%2C22 L300%2C0 L330%2C20 L360%2C0 L390%2C18 L420%2C0 L450%2C16 L480%2C0 L510%2C14 L540%2C0 L570%2C14 L600%2C0 L630%2C12 L660%2C0 L690%2C14 L720%2C0 L750%2C12 L780%2C0 L810%2C14 L840%2C0 L870%2C16 L900%2C0 L930%2C14 L960%2C0 L990%2C16 L1020%2C2 L1050%2C18 L1080%2C0 L1110%2C20 L1140%2C4 L1170%2C24 L1200%2C6 L1230%2C28 L1260%2C8 L1290%2C30 L1320%2C10 L1350%2C32 L1380%2C12 L1410%2C34 L1440%2C14 L1440%2C40 Z'%2F%3E%3C%2Fsvg%3E")
+    0 0 / 100% 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* STAG logo in header */
+.s-nav__drawer-logo {
+  width: 65%;
+  max-width: 220px;
+  height: auto;
+  filter: brightness(0) invert(1);
+  position: relative;
+  z-index: 1;
+}
+
+/* × Close button — top-left of red header */
+.s-nav__drawer-close {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  background: none;
+  border: none;
+  color: var(--white);
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  z-index: 10;
+  transition: opacity 0.2s;
+}
+.s-nav__drawer-close:hover { opacity: 0.7; }
+
+/* Nav link cards */
+.s-nav__drawer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 56px 20px 28px;
+  flex: 1;
+}
+
+.s-nav__drawer-links a {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--white);
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+.s-nav__drawer-links a:hover,
+.s-nav__drawer-links a:active {
+  background: rgba(224,48,42,0.14);
+  border-color: rgba(224,48,42,0.35);
+}
+
+/* Copyright line at bottom */
+.s-nav__drawer-copy {
+  padding: 16px 24px 32px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── HERO ────────────────────────────────────────── */
+/*
+   Increase height to 115 vh so the full hero text
+   (YOUR PAIRED / PASS TO VIBE'IN) is visible before
+   the torn download section overlaps it.
+*/
+.s-hero {
+  height: 115vh;
+  min-height: 800px;
+  background: url('../images/stag_web_female.png') top center / cover no-repeat;
+}
+
+/* ── DOWNLOAD THE APP ────────────────────────────── */
+/*
+   A raised red section with a torn paper edge at the top
+   (implemented via ::before pseudo-element that bleeds upward
+   into the hero section, revealing the torn red shape).
+*/
+.s-download {
+  position: relative;
+  background: var(--red);
+  text-align: center;
+  padding: 40px 20px 70px;
+  z-index: 1;
+}
+
+/* Torn top edge — red tears upward into the hero */
+.s-download::before {
+  content: '';
+  position: absolute;
+  top: -59px;
+  left: 0; right: 0;
+  height: 60px;
+  background: no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 1440 60' preserveAspectRatio='none'%3E%3Cpath fill='%23e0302a' d='M0%2C60 L0%2C38 L30%2C54 L60%2C30 L90%2C50 L120%2C24 L150%2C46 L180%2C18 L210%2C42 L240%2C14 L270%2C40 L300%2C10 L330%2C36 L360%2C6 L390%2C32 L420%2C4 L450%2C28 L480%2C2 L510%2C26 L540%2C0 L570%2C24 L600%2C0 L630%2C22 L660%2C0 L690%2C20 L720%2C0 L750%2C18 L780%2C0 L810%2C20 L840%2C0 L870%2C18 L900%2C0 L930%2C22 L960%2C0 L990%2C24 L1020%2C2 L1050%2C28 L1080%2C4 L1110%2C30 L1140%2C6 L1170%2C32 L1200%2C8 L1230%2C36 L1260%2C10 L1290%2C38 L1320%2C14 L1350%2C42 L1380%2C18 L1410%2C44 L1440%2C22 L1440%2C60 Z'%2F%3E%3C%2Fsvg%3E")
+    0 0 / 100% 100%;
+  pointer-events: none;
+}
+
+.s-download h2 {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: var(--white);
+  margin-bottom: 28px;
+}
+
+.store-btns {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.store-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #111118;
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 14px 36px;
+  border-radius: 50px;
+  transition: background 0.2s;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.store-btn:hover { background: #1e1e30; }
+
+.store-coming-soon {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 22px;
+  background: rgba(0,0,0,0.28);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 50px;
+  padding: 9px 22px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.88);
+  letter-spacing: 0.01em;
+}
+.store-coming-soon strong { color: #fff; font-weight: 700; }
+
+/* ── HOW IT WORKS ────────────────────────────────── */
+.s-how {
+  background: var(--bg);
+  padding: 100px 20px 80px;
+  overflow: hidden;
+}
+
+.s-how__title {
+  text-align: center;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 56px;
+}
+
+/* Gender tab toggle */
+.gender-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 80px;
+}
+
+.gender-tabs__pill {
+  display: inline-flex;
+  background: #1a1a2e;
+  border-radius: 50px;
+  padding: 6px;
+  gap: 4px;
+}
+
+.gtab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 40px;
+  border-radius: 50px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.4);
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.gtab--active {
+  background: var(--bg);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.gtab span       { font-size: 1.2rem; }
+.gtab__icon--red { color: var(--red); }
+
+/* Steps zigzag layout */
+.steps {
+  position: relative;
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 20px 0 0;
+}
+
+/* Dashed vertical connector */
+.steps__vline {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  bottom: 0;
+  width: 0;
+  border-left: 2px dashed rgba(255,255,255,0.12);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.steps__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin-bottom: 44px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Step card */
+.step-card {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: 24px;
+  padding: 24px 24px 28px;
+  border: 1px solid var(--border);
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* Red #Step N badge — tab-style (BL corner sharp) */
+.step-card__badge {
+  position: absolute;
+  top: -17px;
+  left: 0;
+  background: var(--red);
+  color: var(--white);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 8px 22px;
+  border-radius: 12px 12px 12px 0;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.step-card img {
+  width: 110px;
+  height: 110px;
+  object-fit: contain;
+  margin: 20px auto 16px;
+  align-self: center;
+}
+
+.step-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--white);
+}
+
+.step-card p {
+  font-size: 0.87rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Ghost placeholder (dashed empty column) */
+.step-ghost {
+  border: 2px dashed rgba(255,255,255,0.07);
+  border-radius: 24px;
+  min-height: 230px;
+}
+
+/* ── PARTNER BANNER ──────────────────────────────── */
+.s-partner {
+  position: relative;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.s-partner__bg {
+  position: absolute;
+  inset: 0;
+  background: url('http://65.0.179.165/red-texture.png') center / cover no-repeat,
+              linear-gradient(135deg, #9b0000 0%, #e0302a 60%, #7a0000 100%);
+  filter: brightness(0.85);
+}
+
+.s-partner__text {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(1.8rem, 4.5vw, 3.5rem);
+  font-weight: 900;
+  color: var(--white);
+  text-align: center;
+  padding: 40px 20px;
+  text-shadow: 0 2px 24px rgba(0,0,0,0.5);
+}
+
+/* ── CONTACT US ──────────────────────────────────── */
+.s-contact {
+  background: var(--bg);
+  padding: 100px 60px;
+  display: flex;
+  justify-content: center;
+}
+
+.s-contact__inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  width: 100%;
+  max-width: 1100px;
+  align-items: start;
+}
+
+.s-contact__title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 900;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.s-contact__desc {
+  font-size: 0.97rem;
+  color: rgba(255,255,255,0.6);
+  line-height: 1.85;
+  margin-bottom: 30px;
+}
+
+.s-contact__partner {
+  border: 1px solid rgba(224,48,42,0.35);
+  border-radius: 18px;
+  padding: 24px;
+  margin-bottom: 38px;
+  background: rgba(224,48,42,0.06);
+}
+
+.s-contact__partner-label {
+  display: block;
+  color: var(--red);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.s-contact__partner h3 {
+  font-size: 1.25rem;
+  line-height: 1.35;
+  margin-bottom: 10px;
+}
+
+.s-contact__partner p {
+  color: rgba(255,255,255,0.62);
+  font-size: 0.9rem;
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+
+.s-contact__partner-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--white);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.2s, gap 0.2s;
+}
+
+.s-contact__partner-link span {
+  color: var(--red);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.s-contact__partner-link:hover {
+  color: var(--red);
+  gap: 12px;
+}
+
+.s-contact__details {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.s-contact__detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+
+.s-contact__detail-row a,
+.s-contact__detail-row > span:last-child {
+  font-size: 1rem;
+  color: rgba(255,255,255,0.82);
+}
+
+.s-contact__form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.s-input {
+  width: 100%;
+  background: #1c1c2e;
+  border: none;
+  border-radius: 16px;
+  padding: 20px 24px;
+  color: var(--white);
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  outline: none;
+  resize: none;
+  -webkit-appearance: none;
+}
+.s-input::placeholder { color: rgba(255,255,255,0.32); }
+.s-input:focus { box-shadow: 0 0 0 2px rgba(224,48,42,0.4); }
+
+.s-submit {
+  background: var(--red);
+  color: var(--white);
+  border: none;
+  border-radius: 50px;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s;
+}
+.s-submit:hover { background: var(--red-dark); }
+
+/* ── FOOTER ──────────────────────────────────────── */
+.s-footer {
+  position: relative;
+  background: var(--bg-deep);
+  padding: 60px 60px 40px;
+  z-index: 1;
+}
+
+/* Torn top edge — dark bleeds upward into contact section */
+.s-footer::before {
+  content: '';
+  position: absolute;
+  top: -59px;
+  left: 0; right: 0;
+  height: 60px;
+  background: no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox='0 0 1440 60' preserveAspectRatio='none'%3E%3Cpath fill='%23111118' d='M0%2C60 L0%2C42 L30%2C56 L60%2C34 L90%2C52 L120%2C28 L150%2C48 L180%2C20 L210%2C44 L240%2C16 L270%2C38 L300%2C12 L330%2C34 L360%2C8 L390%2C30 L420%2C4 L450%2C26 L480%2C2 L510%2C24 L540%2C0 L570%2C22 L600%2C0 L630%2C20 L660%2C0 L690%2C18 L720%2C0 L750%2C16 L780%2C0 L810%2C18 L840%2C0 L870%2C16 L900%2C0 L930%2C20 L960%2C0 L990%2C22 L1020%2C2 L1050%2C26 L1080%2C4 L1110%2C28 L1140%2C6 L1170%2C30 L1200%2C8 L1230%2C34 L1260%2C12 L1290%2C36 L1320%2C16 L1350%2C40 L1380%2C20 L1410%2C44 L1440%2C24 L1440%2C60 Z'%2F%3E%3C%2Fsvg%3E")
+    0 0 / 100% 100%;
+  pointer-events: none;
+}
+
+.s-footer__inner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  margin-bottom: 50px;
+}
+
+.s-footer__logo img {
+  height: 48px;
+  width: auto;
+}
+
+.s-footer__links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 40px;
+  text-align: right;
+}
+
+.s-footer__links a {
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.78);
+  transition: color 0.2s;
+}
+.s-footer__links a:hover { color: var(--red); }
+
+/* Social icons row */
+.s-footer__social {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.social-link {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.65);
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.social-link:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: var(--white);
+}
+.social-link svg { width: 18px; height: 18px; }
+
+.s-footer__copy {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+}
+
+/* ── TOAST ───────────────────────────────────────── */
+.stag-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e1e30;
+  color: var(--white);
+  padding: 14px 28px;
+  border-radius: 50px;
+  font-size: 0.9rem;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.stag-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── RESPONSIVE ──────────────────────────────────── */
+@media (max-width: 768px) {
+
+  /* ── Navbar ── */
+  .s-nav {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    padding: 12px 20px;
+    gap: 0;
+  }
+  .s-nav__burger { display: flex; grid-column: 1; }
+  .s-nav__logo   { grid-column: 2; justify-self: center; }
+  .s-nav__links  { display: none; }
+  .s-nav__cta    { display: none; }
+
+  /* ── Hero — use mobile-optimised image ── */
+  .s-hero {
+    height: 100svh;
+    min-height: 600px;
+    background-image: url('../images/stag_web_female_phone.png');
+    background-position: top center;
+  }
+
+  /* ── Download section ── */
+  .s-download { padding: 36px 20px 56px; }
+  .s-download h2 { font-size: 1.5rem; margin-bottom: 24px; }
+  .store-btns { flex-direction: column; align-items: center; gap: 12px; }
+  .store-btn { width: 220px; justify-content: center; font-size: 0.95rem; }
+
+  /* ── How It Works ── */
+  .s-how { padding: 70px 16px 60px; }
+  .s-how__title { font-size: clamp(1.8rem, 8vw, 3rem); margin-bottom: 40px; }
+  .gender-tabs { margin-bottom: 48px; }
+  .gtab { padding: 10px 22px; font-size: 0.88rem; }
+  .steps { max-width: 100%; }
+  .steps__row { grid-template-columns: 1fr; gap: 24px; }
+  .step-ghost   { display: none; }
+  .steps__vline { display: none; }
+  .step-card { min-height: auto; padding: 20px 20px 24px; }
+  .step-card img { width: 90px; height: 90px; }
+
+  /* ── Partner banner ── */
+  .s-partner__text { font-size: clamp(1.4rem, 6vw, 2.2rem); padding: 48px 20px; }
+
+  /* ── Contact section ── */
+  .s-contact { padding: 72px 20px; }
+  .s-contact__inner { grid-template-columns: 1fr; gap: 44px; }
+  .s-contact__title { font-size: clamp(1.8rem, 6vw, 2.4rem); text-align: center; }
+  .s-contact__desc  { text-align: center; margin-bottom: 28px; }
+  .s-contact__partner { text-align: left; margin-bottom: 32px; }
+  .s-contact__details { align-items: center; }
+  .s-contact__detail-row { align-items: center; text-align: center; }
+
+  /* ── Footer ── */
+  .s-footer { padding: 60px 24px 32px; }
+  .s-footer__inner { flex-direction: column; align-items: center; gap: 24px; }
+  .s-footer__links  { grid-template-columns: 1fr; text-align: center; }
+}
+
+/* ── Extra-small phones ──────────────────────────── */
+@media (max-width: 420px) {
+  .s-nav { padding: 10px 16px; }
+  .s-nav__logo img { height: 28px; }
+  .store-btn { width: 100%; max-width: 260px; }
+  .gtab { padding: 9px 16px; font-size: 0.82rem; }
+  .step-card { padding: 18px 16px 20px; }
+  .s-footer { padding: 50px 16px 28px; }
+  .s-footer__links a { font-size: 0.85rem; }
+  .s-contact { padding: 60px 16px; }
+}

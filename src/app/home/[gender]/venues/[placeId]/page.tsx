@@ -1,0 +1,152 @@
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { CompanionUser, fetchCompanionsNearPlace, fetchPlaceDetails, PlaceDetails } from "@/lib/api";
+
+export default function VenueCompanionsPage() {
+  const params = useParams<{ gender: string; placeId: string }>();
+  const router = useRouter();
+  const role = params.gender?.toLowerCase() === "female" ? "female" : "male";
+  const placeId = decodeURIComponent(params.placeId || "");
+  const [companions, setCompanions] = useState<CompanionUser[]>([]);
+  const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!window.localStorage.getItem("stag_access_token")) {
+      router.replace("/signup");
+      return;
+    }
+
+    if (!placeId) {
+      setError("This venue could not be identified.");
+      setIsLoading(false);
+      return;
+    }
+
+    fetchPlaceDetails(placeId)
+      .then(setPlaceDetails)
+      .catch(() => {});
+
+    fetchCompanionsNearPlace(placeId)
+      .then((users) => setCompanions(Array.isArray(users) ? users : []))
+      .catch(() => setError("We could not load entry partners for this venue right now."))
+      .finally(() => setIsLoading(false));
+  }, [placeId, router]);
+
+  return (
+    <section className="app-placeholder content-width venue-companions-page">
+      <Link className="text-link venue-back-link" href={`/home/${role}`}>
+        <span>←</span> Back to venues
+      </Link>
+      <div className="venue-companions-heading">
+        <div>
+          <p className="eyebrow">ENTRY PARTNERS</p>
+          <h1>Choose someone to help you get in.</h1>
+          <p className="lede">These members are available near this venue and can assist with club entry.</p>
+        </div>
+      </div>
+
+      {placeDetails && (
+        <div className="venue-details-summary">
+          <div>
+            <p className="eyebrow">VENUE DETAILS</p>
+            <h2>{placeDetails.name || "Selected venue"}</h2>
+            {placeDetails.formatted_address && <p className="venue-details-address">{placeDetails.formatted_address}</p>}
+          </div>
+          <div className="venue-details-facts">
+            {typeof placeDetails.rating === "number" && (
+              <span><strong>★ {placeDetails.rating.toFixed(1)}</strong>{placeDetails.user_ratings_total ? ` (${placeDetails.user_ratings_total.toLocaleString("en-IN")})` : ""}</span>
+            )}
+            {typeof placeDetails.opening_hours?.open_now === "boolean" && (
+              <span className={placeDetails.opening_hours.open_now ? "venue-open" : "venue-closed"}>
+                {placeDetails.opening_hours.open_now ? "Open now" : "Closed now"}
+              </span>
+            )}
+            {placeDetails.types?.[0] && <span>{formatPlaceType(placeDetails.types[0])}</span>}
+          </div>
+          {placeDetails.opening_hours?.weekday_text && placeDetails.opening_hours.weekday_text.length > 0 && (
+            <details className="venue-hours">
+              <summary>Opening hours</summary>
+              <ul>
+                {placeDetails.opening_hours.weekday_text.map((hours) => <li key={hours}>{hours}</li>)}
+              </ul>
+            </details>
+          )}
+        </div>
+      )}
+
+      {error && <p className="form-message form-error" role="alert">{error}</p>}
+      {isLoading ? (
+        <div className="empty-panel"><span>Finding entry partners near this venue...</span></div>
+      ) : companions.length > 0 ? (
+        <div className="companion-grid">
+          {companions.map((companion, index) => (
+            <Link
+              className={companion.isPlannedVisit ? "companion-card companion-card-planned" : "companion-card"}
+              href={`/home/${role}/venues/${encodeURIComponent(placeId)}/users/${encodeURIComponent(companion.id || String(index))}`}
+              key={companion.id || index}
+            >
+              <div className="companion-card-header">
+                {companion.profilePicUrl ? (
+                  <img className="companion-avatar" src={companion.profilePicUrl} alt="" />
+                ) : (
+                  <div className="companion-avatar companion-avatar-placeholder" aria-hidden="true">{getInitials(companion.name)}</div>
+                )}
+                <div>
+                  <h2>{companion.name || "STAG member"}</h2>
+                  {companion.selfieVerified && <span className="companion-verified">Verified</span>}
+                </div>
+              </div>
+              {companion.isPlannedVisit && <p className="companion-planned">Planning to visit this venue</p>}
+              {companion.isPlannedVisit && companion.plannedVisitAt ? (
+                <p className="companion-meta">Planned for {formatDate(companion.plannedVisitAt)}</p>
+              ) : typeof companion.distance === "number" ? (
+                <p className="companion-meta">{formatDistance(companion.distance)} from this place</p>
+              ) : null}
+              <p className="companion-fee">
+                Estimated STAG payment: ₹{formatAmount(companion.companionFee ?? companion.plannedEntryFee ?? companion.chargeAmount ?? 0)}
+              </p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-panel">
+          <strong>No entry partners are available right now.</strong>
+          <span>Try another venue or check back later.</span>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function getInitials(name?: string) {
+  return (name || "STAG")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+}
+
+function formatDistance(distance: number) {
+  const rounded = Math.round(distance * 2) / 2;
+  return `${rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)} ${rounded === 1 ? "km" : "kms"}`;
+}
+
+function formatAmount(amount: number) {
+  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(amount);
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function formatPlaceType(value: string) {
+  return value.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+}

@@ -7,11 +7,12 @@ import { ActiveRequest, fetchUserRequests } from "@/lib/api";
 
 const PAGE_SIZE = 10;
 const filters = [
-  { label: "All", value: "" },
-  { label: "Awaiting confirmation", value: "pending" },
-  { label: "Awaiting payment", value: "accepted,confirm_intended,payment_initiated" },
-  { label: "Confirmed", value: "confirmed,verified" },
-  { label: "Past", value: "past" },
+  { label: "All", femaleLabel: "All", value: "" },
+  { label: "Response pending", femaleLabel: "Your response needed", value: "pending" },
+  { label: "Pay to confirm", femaleLabel: "Accepted", value: "accepted,confirm_intended" },
+  { label: "Confirmed", femaleLabel: "Confirmed", value: "confirmed,verified" },
+  { label: "Completed", femaleLabel: "Completed", value: "completed" },
+  { label: "Cancelled", femaleLabel: "Cancelled", value: "cancelled,canceled" },
 ];
 
 export default function RequestsPage() {
@@ -35,26 +36,33 @@ export default function RequestsPage() {
     const userId = window.localStorage.getItem("stag_user_id");
     if (!userId) return;
 
-    setIsLoading(true);
-    setError("");
-    const isPast = filter === "past";
     const isAll = filter === "";
-    fetchUserRequests(userId, {
-      page,
-      limit: PAGE_SIZE,
-      timeline: isPast ? "past" : isAll ? "all" : "upcoming",
-      status: isPast ? undefined : filter || undefined,
-    })
-      .then((result) => {
-        setRequests(result.items || []);
-        setTotal(result.total || 0);
+    const includesPastRequests = filter === "completed" || filter === "cancelled,canceled";
+    const loadRequests = () => {
+      setIsLoading(true);
+      setError("");
+      return fetchUserRequests(userId, {
+        page,
+        limit: PAGE_SIZE,
+        timeline: isAll || includesPastRequests ? "all" : "upcoming",
+        status: filter || undefined,
       })
-      .catch(() => {
-        setRequests([]);
-        setTotal(0);
-        setError("We could not load your requests right now.");
-      })
-      .finally(() => setIsLoading(false));
+        .then((result) => {
+          setRequests(result.items || []);
+          setTotal(result.total || 0);
+        })
+        .catch(() => {
+          setRequests([]);
+          setTotal(0);
+          setError("We could not load your requests right now.");
+        })
+        .finally(() => setIsLoading(false));
+    };
+
+    void loadRequests();
+    const handleRequestUpdate = () => void loadRequests();
+    window.addEventListener("stag-request-updated", handleRequestUpdate);
+    return () => window.removeEventListener("stag-request-updated", handleRequestUpdate);
   }, [filter, page]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -71,7 +79,7 @@ export default function RequestsPage() {
       </div>
 
       <div className="request-filters" aria-label="Filter requests by status">
-        {filters.map((item) => (
+            {filters.map((item) => (
           <button
             className={filter === item.value ? "request-filter active" : "request-filter"}
             key={item.value || "all"}
@@ -80,8 +88,8 @@ export default function RequestsPage() {
               setFilter(item.value);
               setPage(1);
             }}
-          >
-            {item.label}
+            >
+            {role === "female" ? item.femaleLabel : item.label}
           </button>
         ))}
       </div>
@@ -110,20 +118,18 @@ export default function RequestsPage() {
                   }
                 }}
               >
-                <span className="request-status">{getStatusLabel(request)}</span>
+                <span className="request-status">{getStatusLabel(request, role)}</span>
                 <h3>{request.clubName || "Club entry"}</h3>
                 <p>{getCounterpart(request, role)?.username || getCounterpart(request, role)?.name || "Entry partner"}</p>
                 <small>{request.datetime ? formatDate(request.datetime) : "Date to be confirmed"}</small>
               </article>
             ))}
           </div>
-          {totalPages > 1 && (
-            <nav className="request-pagination" aria-label="Request pages">
-              <button className="button button-secondary" type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button>
-              <span>Page {page} of {totalPages}</span>
-              <button className="button button-secondary" type="button" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>Next</button>
-            </nav>
-          )}
+          <nav className="request-pagination" aria-label="Request pages">
+            <button className="button button-secondary" type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)}>Previous</button>
+            <span>Page {page} of {totalPages}</span>
+            <button className="button button-secondary" type="button" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>Next</button>
+          </nav>
         </>
       ) : (
         <div className="empty-panel">
@@ -135,11 +141,16 @@ export default function RequestsPage() {
   );
 }
 
-function getStatusLabel(request: ActiveRequest) {
-  if (request.payment?.paymentStatus === "completed" || request.status === "confirmed" || request.status === "verified") return "CONFIRMED";
-  if (request.status === "accepted" || request.status === "confirm_intended" || request.status === "payment_initiated") return "AWAITING PAYMENT";
-  if (request.status === "pending") return "AWAITING CONFIRMATION";
-  return "PENDING";
+function getStatusLabel(request: ActiveRequest, role: string) {
+  if (["cancelled", "canceled"].includes(request.status || "")) return "Cancelled";
+  if (request.status === "completed") return "Completed";
+  if (request.payment?.paymentStatus === "completed" || request.status === "confirmed") return "Confirmed";
+  if (request.status === "verified") return "Verified";
+  if (request.status === "pending") return role === "female" ? "Your response needed" : "Response pending";
+  if (request.status === "accepted" || request.status === "confirm_intended") return role === "female" ? "Accepted" : "Pay to confirm";
+  if (request.status === "payment_initiated") return "Payment processing";
+  if (["rejected", "declined", "refused"].includes(request.status || "")) return "Not accepted";
+  return "Request updated";
 }
 
 function getCounterpart(request: ActiveRequest, role: string) {

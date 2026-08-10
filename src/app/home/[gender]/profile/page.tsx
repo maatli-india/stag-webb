@@ -3,7 +3,7 @@
  import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
  import { useParams, useRouter } from "next/navigation";
-import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails, UserProfile } from "@/lib/api";
+import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails, updateUserDetailsForProfileUpload, uploadProfilePicture as uploadProfilePictureFile, UserProfile } from "@/lib/api";
 
  export default function ProfilePage() {
    const params = useParams<{ gender: string }>();
@@ -14,8 +14,12 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
    const [email, setEmail] = useState("");
    const [dateOfBirth, setDateOfBirth] = useState("");
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
+  const [showProfileImage, setShowProfileImage] = useState(false);
    const [isLoading, setIsLoading] = useState(true);
    const [isSaving, setIsSaving] = useState(false);
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [isAvailabilitySaving, setIsAvailabilitySaving] = useState(false);
+  const [showBreakConfirm, setShowBreakConfirm] = useState(false);
    const [message, setMessage] = useState("");
    const [error, setError] = useState("");
 
@@ -36,6 +40,7 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
          setName(details.name || "");
          setEmail(details.email || "");
          setDateOfBirth(formatDateForInput(details.dateOfBirth));
+         setIsOnBreak(details.status === "inactive");
        })
        .catch(() => setError("We could not load your profile right now."))
        .finally(() => setIsLoading(false));
@@ -72,27 +77,48 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
    };
 
   const uploadProfilePicture = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const input = event.currentTarget;
+    const file = input.files?.[0];
     const userId = window.localStorage.getItem("stag_user_id");
     if (!file || !userId) return;
     setIsPhotoLoading(true);
     setError("");
     setMessage("");
     try {
-      const uploadMeta = await getProfilePicUploadUrl(userId, file.type || "image/jpeg");
-      const uploadUrl = uploadMeta.uploadUrl || uploadMeta.url || uploadMeta.presignedUrl;
-      if (!uploadUrl || !uploadMeta.fileId) throw new Error("Invalid upload response");
-      const uploadResponse = await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": file.type || "image/jpeg" }, body: file });
-      if (!uploadResponse.ok) throw new Error("Image upload failed");
-      const updated = await updateUserDetails(userId, { name, email, gender: profile?.gender || gender, phone: profile?.phone || "", dateOfBirth, profilePicId: uploadMeta.fileId });
+      const uploadMeta = await uploadProfilePictureFile(file, userId);
+      const updated = await updateUserDetailsForProfileUpload(userId, { name, email, gender: profile?.gender || gender, phone: profile?.phone || "", dateOfBirth, profilePicId: uploadMeta.fileId });
       setProfile((current) => ({ ...current, ...updated, profilePicId: uploadMeta.fileId }));
       setMessage("Profile picture updated successfully.");
-    } catch {
-      setError("We could not upload your profile picture. Please try again.");
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : "We could not upload your profile picture. Please try again.");
     } finally {
       setIsPhotoLoading(false);
-      event.target.value = "";
+      input.value = "";
     }
+  };
+
+  const updateAvailability = async (goingOnBreak: boolean) => {
+    setIsAvailabilitySaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await toggleUserAvailability();
+      setIsOnBreak(goingOnBreak);
+      setProfile((current) => ({ ...current, status: goingOnBreak ? "inactive" : "active" }));
+      setMessage(goingOnBreak ? "You are now on a break. Existing requests are still available." : "You are available again and can receive new entry requests.");
+    } catch (availabilityError) {
+      setError(availabilityError instanceof Error ? availabilityError.message : "We could not update your availability. Please try again.");
+    } finally {
+      setIsAvailabilitySaving(false);
+    }
+  };
+
+  const toggleAvailability = () => {
+    if (!isOnBreak) {
+      setShowBreakConfirm(true);
+      return;
+    }
+    void updateAvailability(false);
   };
 
   const removeProfilePicture = async () => {
@@ -107,7 +133,7 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
     setMessage("");
     try {
       await deleteFile(profile.profilePicId);
-      const updated = await updateUserDetails(userId, { name, email, gender: profile.gender || gender, phone: profile.phone || "", dateOfBirth, profilePicId: "" });
+      const updated = await updateUserDetailsForProfileUpload(userId, { name, email, gender: profile.gender || gender, phone: profile.phone || "", dateOfBirth, profilePicId: "" });
       setProfile((current) => ({ ...current, ...updated, profilePicId: "", profilePicUrl: "" }));
       setMessage("Profile picture removed successfully.");
     } catch {
@@ -129,7 +155,7 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
                <p className="lede">Keep your account details accurate so requests, payments, and venue coordination stay clear.</p>
              </div>
              <div className="profile-edit-photo-wrap">
-               {profile?.profilePicUrl ? <img className="profile-edit-avatar profile-edit-avatar-image" src={profile.profilePicUrl} alt="Your profile" /> : <div className="profile-edit-avatar">{getInitials(profile?.name || name)}</div>}
+               {profile?.profilePicUrl ? <button className="profile-edit-avatar-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="View profile picture"><img className="profile-edit-avatar profile-edit-avatar-image" src={profile.profilePicUrl} alt="Your profile" /></button> : <div className="profile-edit-avatar">{getInitials(profile?.name || name)}</div>}
                <label className="profile-photo-upload">{isPhotoLoading ? "Updating..." : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadProfilePicture} disabled={isPhotoLoading} /></label>
                {profile?.profilePicId && <button className="profile-photo-delete" type="button" onClick={removeProfilePicture} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>}
              </div>
@@ -145,6 +171,31 @@ import { deleteFile, fetchUserDetails, getProfilePicUploadUrl, updateUserDetails
              <label>Phone number<input value={profile?.phone || "Not available"} readOnly /></label>
              <div className="profile-edit-actions"><button className="button button-primary" type="submit" disabled={isSaving}>{isSaving ? "Saving..." : "Save changes"}</button><Link className="button button-secondary" href={`/home/${gender}`}>Cancel</Link></div>
            </form>
+             {gender === "female" && <section className={`profile-break-section ${isOnBreak ? "profile-break-active" : ""}`}>
+               <div>
+                 <p className="eyebrow">AVAILABILITY</p>
+                 <h2>{isOnBreak ? "On a Break" : "Give yourself a break"}</h2>
+                 <p>Taking a break hides your profile from new users and pauses new entry requests. You can still continue with existing requests.</p>
+               </div>
+               <button className={`availability-toggle ${isOnBreak ? "availability-toggle-on" : ""}`} type="button" role="switch" aria-checked={isOnBreak} onClick={toggleAvailability} disabled={isAvailabilitySaving}>
+                 <span>{isAvailabilitySaving ? "Updating..." : isOnBreak ? "Resume requests" : "Take a break"}</span>
+                 <i aria-hidden="true" />
+               </button>
+             </section>}
+           {showBreakConfirm && <div className="action-modal-backdrop" role="presentation" onClick={() => setShowBreakConfirm(false)}>
+             <section className="action-modal break-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="break-confirmation-title" onClick={(event) => event.stopPropagation()}>
+               <p className="eyebrow">AVAILABILITY</p>
+               <h2 id="break-confirmation-title">We will miss you.</h2>
+               <p className="action-modal-copy">Are you sure you want to go on a break? Your profile will not be shown to new users and you will not receive new entry requests. Existing requests will continue as usual.</p>
+               <div className="action-modal-buttons"><button className="button button-primary" type="button" disabled={isAvailabilitySaving} onClick={() => { setShowBreakConfirm(false); void updateAvailability(true); }}>{isAvailabilitySaving ? "Updating..." : "Take a break"}</button><button className="button button-quiet" type="button" onClick={() => setShowBreakConfirm(false)}>Cancel</button></div>
+             </section>
+           </div>}
+           {showProfileImage && profile?.profilePicUrl && (
+             <div className="profile-image-modal" role="dialog" aria-modal="true" aria-label="Your profile picture" onClick={() => setShowProfileImage(false)}>
+               <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
+               <img src={profile.profilePicUrl} alt="Your profile" onClick={(event) => event.stopPropagation()} />
+             </div>
+           )}
          </>
        )}
      </section>

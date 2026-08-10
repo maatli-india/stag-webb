@@ -36,6 +36,9 @@ export default function UserProfilePage() {
   const [blockComment, setBlockComment] = useState("");
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showProfileImage, setShowProfileImage] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [legalTitle, setLegalTitle] = useState("STAG Terms & Conditions");
+  const [showRequestConfirmation, setShowRequestConfirmation] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -91,7 +94,8 @@ export default function UserProfilePage() {
         clubAddress: placeDetails?.formatted_address,
         placeId,
       });
-      setMessage(`Request sent for ${formatRequestDateTime(requestDateTime)} at ${placeDetails?.name || "this venue"}. You will need to pay and confirm once it is accepted. You can track its status from My requests.`);
+      setMessage("");
+      setShowRequestConfirmation(true);
     } catch {
       setError("We could not send this request. Please check the date and try again.");
     } finally {
@@ -182,7 +186,7 @@ export default function UserProfilePage() {
                     </ul>
                     <p className="entry-guidelines-warning">Misconduct may result in cancellation, account suspension, venue reporting, or reports to law enforcement where appropriate. You may also face civil or criminal consequences under applicable law.</p>
                   </aside>
-                  <label className="entry-guidelines-acknowledgement"><input type="checkbox" required /> <span>I have read and agree to follow these entry-only guidelines and the <Link className="text-link" href="/terms">STAG Terms &amp; Conditions</Link>.</span></label>
+                  <label className="entry-guidelines-acknowledgement"><input type="checkbox" required /> <span>I have read and agree to follow these entry-only guidelines and the <button className="text-link terms-inline-button" type="button" onClick={() => setShowTerms(true)}>STAG Terms &amp; Conditions</button>.</span></label>
                   <label><span className="visit-time-label">Visit date and time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><input className="date-time-input" type="datetime-local" min={getDefaultDateTime()} value={requestDateTime} onChange={(event) => setRequestDateTime(event.target.value)} required /></label>
                   <button className="button button-primary" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending..." : "Send request"}</button>
                 </form>
@@ -213,6 +217,30 @@ export default function UserProfilePage() {
         <div className="profile-image-modal" role="dialog" aria-modal="true" aria-label="Profile picture" onClick={() => setShowProfileImage(false)}>
           <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
           <img src={profile.profilePicUrl} alt={`${profile.name || "User"} profile`} />
+        </div>
+      )}
+      {showTerms && (
+        <div className="terms-modal" role="dialog" aria-modal="true" aria-label={legalTitle}>
+          <div className="terms-modal-content">
+            <div className="terms-modal-header">
+              <div className="terms-modal-heading"><span>STAG LEGAL</span><strong>{legalTitle}</strong></div>
+              <button type="button" className="terms-modal-close" aria-label="Close legal document" onClick={() => setShowTerms(false)}>×</button>
+            </div>
+            <iframe className="terms-modal-frame" title={legalTitle} src="/terms?embedded=1" onLoad={(event) => {
+              const path = new URL(event.currentTarget.src).pathname;
+              setLegalTitle(path === "/privacy" ? "Privacy Policy" : path === "/child-safety" ? "Child Safety Standards" : "STAG Terms & Conditions");
+            }} />
+          </div>
+        </div>
+      )}
+      {showRequestConfirmation && (
+        <div className="action-modal-backdrop" role="presentation">
+          <section className="action-modal request-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="request-confirmation-title">
+            <p className="eyebrow">REQUEST SENT</p>
+            <h2 id="request-confirmation-title">Your request is on its way.</h2>
+            <p className="action-modal-copy">Your entry request for {formatRequestDateTime(requestDateTime)} at {placeDetails?.name || "this venue"} has been sent. You will need to pay and confirm once it is accepted.</p>
+            <button className="button button-primary" type="button" onClick={() => router.push(`/home/${role}/venues/${encodeURIComponent(placeId)}`)}>Back to entry partners</button>
+          </section>
         </div>
       )}
       {showBlockModal && profile && (

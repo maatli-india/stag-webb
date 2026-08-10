@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { SiteShell } from "@/components/site-shell";
 
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body><SiteShell>{children}</SiteShell></body>
+      <body><Suspense fallback={<main /> }><SiteShell>{children}</SiteShell></Suspense></body>
     </html>
   );
 }

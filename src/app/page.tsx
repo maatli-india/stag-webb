@@ -25,7 +25,7 @@ export default function Home() {
           <div className="hero-actions"><a className="button button-primary button-large" href="/signup">Create your account <span>↗</span></a><a className="text-link" href="#how-it-works">See how it works <span>↓</span></a></div>
           <div className="trust-line"><span>18+ only</span><span>Secure payments processed by STAG</span><span>Venue-based confirmation</span></div>
         </div>
-        <div className="hero-art"><Image src="/assets/images/stag_web_female.png" alt="STAG club entry experience" fill priority sizes="(max-width: 850px) 100vw, 50vw" /><div className="hero-stamp"><strong>STAG</strong><span>ARRIVE WITH<br />CONFIDENCE</span></div></div>
+        <div className="hero-art"><Image src="/assets/images/clubImg/club-02.png" alt="Club interior" fill priority sizes="(max-width: 850px) 100vw, 50vw" /><div className="hero-stamp"><strong>STAG</strong><span>ARRIVE WITH<br />CONFIDENCE</span></div></div>
       </section>
       <section className="statement-band"><div className="content-width statement-grid"><p className="eyebrow">A CLEARER WAY IN</p><h2>Club entry, made<br /><em>simple and direct.</em></h2><p>Find a venue, request club entry assistance, and follow each step through STAG. We keep the experience focused on verified venues, clear requests, and confident arrival.</p></div></section>
       <section className="steps-section content-width" id="how-it-works"><div className="section-heading"><p className="eyebrow">HOW IT WORKS</p><h2>One platform.<br /><em>Two ways to participate.</em></h2></div><div className="role-grid"><RoleSteps title="For members looking for entry" steps={maleSteps} /><RoleSteps title="For registered entry-assistance members" steps={femaleSteps} accent /></div></section>

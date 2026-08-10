@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { AuthShell } from "@/components/auth-shell";
 
 const navLinks = [
@@ -58,7 +58,6 @@ export function SiteFooter() {
           </div>
           <div>
             <span>Start here</span>
-            <Link href="/login">Log in</Link>
             <Link href="/signup">Create account</Link>
             <a href="mailto:info@stag.org.in">Contact support</a>
           </div>
@@ -74,7 +73,10 @@ export function SiteFooter() {
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const isAuthenticatedRoute = pathname.startsWith("/home/");
+  const isEmbeddedLegal = ["/terms", "/privacy", "/child-safety"].includes(pathname) && searchParams.get("embedded") === "1";
+  if (isEmbeddedLegal) return <main className="embedded-terms">{children}</main>;
   return isAuthenticatedRoute ? <AuthShell>{children}</AuthShell> : <><SiteHeader /><main>{children}</main><SiteFooter /></>;
 }
 

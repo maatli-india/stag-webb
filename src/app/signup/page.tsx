@@ -1,7 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { createUser, generateOtp, validateOtp } from "@/lib/api";
+import { ChangeEvent, FormEvent, useState } from "react";
+import { createUser, generateOtp, updateUserDetailsForProfileUpload, uploadProfilePicture, validateOtp } from "@/lib/api";
 
 type SignupStep = "phone" | "otp" | "details";
 
@@ -13,6 +13,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
@@ -33,7 +35,12 @@ export default function SignupPage() {
       setStep("otp");
       setMessage(`We sent a 6-digit OTP to +91 ${phone}.`);
     } catch (requestError) {
-      setError(getErrorMessage(requestError, "We could not send the OTP. Please try again."));
+      setError(
+        getErrorMessage(
+          requestError,
+          "We could not send the OTP. Please try again.",
+        ),
+      );
     } finally {
       setIsBusy(false);
     }
@@ -58,7 +65,32 @@ export default function SignupPage() {
       setStep("details");
       setMessage("Phone number verified. Complete your profile to continue.");
     } catch (requestError) {
-      setError(getErrorMessage(requestError, "That OTP could not be verified. Check it and try again."));
+      setError(
+        getErrorMessage(
+          requestError,
+          "That OTP could not be verified. Check it and try again.",
+        ),
+      );
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setOtp("");
+    setError("");
+    setMessage("");
+    setIsBusy(true);
+    try {
+      await generateOtp(phone);
+      setMessage(`A new OTP was sent to +91 ${phone}.`);
+    } catch (requestError) {
+      setError(
+        getErrorMessage(
+          requestError,
+          "We could not resend the OTP. Please try again.",
+        ),
+      );
     } finally {
       setIsBusy(false);
     }
@@ -81,22 +113,237 @@ export default function SignupPage() {
     setMessage("");
     setIsBusy(true);
     try {
-      const response = await createUser({ name: fullName.trim(), email: email.trim().toLowerCase(), phone, gender, dateOfBirth: formatDateForApi(dateOfBirth), chargeAmount: 0 });
+      const response = await createUser({
+        name: fullName.trim(),
+        email: email.trim().toLowerCase(),
+        phone,
+        gender,
+        dateOfBirth: formatDateForApi(dateOfBirth),
+        chargeAmount: 0,
+      });
       persistSession(response);
-      window.location.assign(getHomePath(response.userDetails?.gender || gender));
+      const userId = response.userDetails?.id;
+      if (profilePicture && userId) {
+        const uploadMeta = await uploadProfilePicture(profilePicture, userId);
+        await updateUserDetailsForProfileUpload(userId, { name: fullName.trim(), email: email.trim().toLowerCase(), gender, phone, dateOfBirth: formatDateForApi(dateOfBirth), profilePicId: uploadMeta.fileId });
+      }
+      if (gender === "female") {
+        window.localStorage.setItem("stag_new_fuser_onboarding", "true");
+      }
+      window.location.assign(
+        getHomePath(response.userDetails?.gender || gender),
+      );
     } catch (requestError) {
-      setError(getErrorMessage(requestError, "We could not create your account. Please try again."));
+      setError(
+        getErrorMessage(
+          requestError,
+          "We could not create your account. Please try again.",
+        ),
+      );
     } finally {
       setIsBusy(false);
     }
   };
 
-  return <section className="auth-page content-width"><div className="auth-card"><p className="eyebrow">START WITH STAG</p><h1>Create your account.</h1><p>Verify your phone first, then complete the details needed to arrange club entry assistance.</p>{step === "phone" && <form onSubmit={handleSendOtp}><label>Mobile number<span className="field-hint">India +91</span><div className="phone-field"><span>+91</span><input aria-label="Mobile number" type="tel" inputMode="numeric" placeholder="10-digit mobile number" value={phone} maxLength={10} onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))} /></div></label><button className="button button-primary" type="submit" disabled={!validPhone || isBusy}>{isBusy ? "Sending OTP..." : "Verify phone number"}</button></form>}{step === "otp" && <form onSubmit={handleVerifyOtp}><label>Enter OTP<span className="field-hint">6-digit code sent to +91 {phone}</span><input autoFocus type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="000000" value={otp} maxLength={6} onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))} /></label><button className="button button-primary" type="submit" disabled={otp.length !== 6 || isBusy}>{isBusy ? "Verifying..." : "Verify OTP"}</button><button className="button button-quiet auth-secondary" type="button" onClick={() => { setStep("phone"); setOtp(""); setMessage(""); setError(""); }}>Use a different number</button></form>}{step === "details" && <form onSubmit={handleCreateAccount}><label>Full name<input required type="text" placeholder="Your full name" value={fullName} onChange={(event) => setFullName(event.target.value)} /></label><label>Email address<input required type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} /></label><label>Date of birth<input required type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} /></label><label>Gender<select required value={gender} onChange={(event) => setGender(event.target.value)}><option value="">Select gender</option><option value="male">Male</option><option value="female">Female</option><option value="other">Prefer not to say</option></select></label><button className="button button-primary" type="submit" disabled={isBusy}>{isBusy ? "Creating account..." : "Create account"}</button></form>}{error && <p className="form-message form-error" role="alert">{error}</p>}{message && <p className="form-message form-success" role="status">{message}</p>}</div></section>;
+  const handleProfilePictureChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Choose a JPG, PNG, or WebP image.");
+      event.target.value = "";
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Profile pictures must be smaller than 5 MB.");
+      event.target.value = "";
+      return;
+    }
+    setError("");
+    setProfilePicture(file);
+    setProfilePicturePreview(URL.createObjectURL(file));
+  };
+
+  return (
+    <section className="auth-page content-width">
+      <div className="auth-card">
+        <p className="eyebrow">START WITH STAG</p>
+        <h1>Create your account.</h1>
+        <p>
+          Verify your phone first, then complete the details needed to arrange
+          club entry assistance.
+        </p>
+        {step === "phone" && (
+          <form onSubmit={handleSendOtp}>
+            <label>
+              Mobile number<span className="field-hint">India +91</span>
+              <div className="phone-field">
+                <span>+91</span>
+                <input
+                  aria-label="Mobile number"
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="10-digit mobile number"
+                  value={phone}
+                  maxLength={10}
+                  onChange={(event) =>
+                    setPhone(event.target.value.replace(/\D/g, ""))
+                  }
+                />
+              </div>
+            </label>
+            <button
+              className="button button-primary"
+              type="submit"
+              disabled={!validPhone || isBusy}
+            >
+              {isBusy ? "Sending OTP..." : "Verify phone number"}
+            </button>
+          </form>
+        )}
+        {step === "otp" && (
+          <form onSubmit={handleVerifyOtp}>
+            <label>
+              Enter OTP
+              <span className="field-hint">
+                6-digit code sent to +91 {phone}
+              </span>
+              <input
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={otp}
+                maxLength={6}
+                onChange={(event) =>
+                  setOtp(event.target.value.replace(/\D/g, ""))
+                }
+              />
+            </label>
+            <button
+              className="button button-primary"
+              type="submit"
+              disabled={otp.length !== 6 || isBusy}
+            >
+              {isBusy ? "Verifying..." : "Verify OTP"}
+            </button>
+            <p className="otp-resend">
+              Didn&apos;t get the OTP?{" "}
+              <button
+                className="text-link otp-resend-link"
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isBusy}
+              >
+                Resend OTP
+              </button>
+            </p>
+            <button
+              className="button button-quiet auth-secondary"
+              type="button"
+              onClick={() => {
+                setStep("phone");
+                setOtp("");
+                setMessage("");
+                setError("");
+              }}
+            >
+              Use a different number
+            </button>
+          </form>
+        )}
+        {step === "details" && (
+          <form onSubmit={handleCreateAccount}>
+            <label>
+              Full name
+              <input
+                required
+                type="text"
+                placeholder="Your full name"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+              />
+            </label>
+            <label>
+              Email address
+              <input
+                required
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
+            <label>
+              Date of birth
+              <input
+                required
+                type="date"
+                value={dateOfBirth}
+                onChange={(event) => setDateOfBirth(event.target.value)}
+              />
+            </label>
+            <label>
+              Gender
+              <select
+                required
+                value={gender}
+                onChange={(event) => setGender(event.target.value)}
+              >
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Prefer not to say</option>
+              </select>
+            </label>
+            <div className="signup-profile-photo">
+              <span className="signup-profile-photo-label">Profile picture <span className="field-hint">Optional</span></span>
+              <div className="signup-profile-photo-row">
+                {profilePicturePreview ? <img className="signup-profile-avatar" src={profilePicturePreview} alt="Profile preview" /> : <div className="signup-profile-avatar signup-profile-avatar-placeholder">{getInitials(fullName)}</div>}
+                <label className="profile-photo-upload">{profilePicture ? "Change photo" : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureChange} disabled={isBusy} /></label>
+              </div>
+            </div>
+            <button
+              className="button button-primary"
+              type="submit"
+              disabled={isBusy}
+            >
+              {isBusy ? "Creating account..." : "Create account"}
+            </button>
+          </form>
+        )}
+        {error && (
+          <p className="form-message form-error" role="alert">
+            {error}
+          </p>
+        )}
+        {message && (
+          <p className="form-message form-success" role="status">
+            {message}
+          </p>
+        )}
+      </div>
+    </section>
+  );
 }
 
-function persistSession(response: { token?: { accessToken?: string; refreshToken?: string }; userDetails?: { id?: string; _id?: string } }) {
-  if (response.token?.accessToken) window.localStorage.setItem("stag_access_token", response.token.accessToken);
-  if (response.token?.refreshToken) window.localStorage.setItem("stag_refresh_token", response.token.refreshToken);
+function getInitials(name: string) {
+  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "STAG";
+}
+
+function persistSession(response: {
+  token?: { accessToken?: string; refreshToken?: string };
+  userDetails?: { id?: string; _id?: string };
+}) {
+  if (response.token?.accessToken)
+    window.localStorage.setItem(
+      "stag_access_token",
+      response.token.accessToken,
+    );
+  if (response.token?.refreshToken)
+    window.localStorage.setItem(
+      "stag_refresh_token",
+      response.token.refreshToken,
+    );
   const userId = response.userDetails?.id || response.userDetails?._id;
   if (userId) window.localStorage.setItem("stag_user_id", userId);
 }

@@ -26,7 +26,6 @@ npm run build
 - `/privacy` privacy policy
 - `/terms` terms and conditions
 - `/child-safety` child-safety standards
-- `/login` login entry point placeholder
 - `/signup` registration entry point placeholder
 
 ## Structure

@@ -243,7 +243,10 @@ export default function RequestDetailsPage() {
 
   const submitMeetupCode = async () => {
     const code = meetupCode.trim();
-    if (!request?.id || !code || isCodeLoading) return;
+    if (!request?.id || !/^\d{1,6}$/.test(code) || isCodeLoading) {
+      if (code && !/^\d{1,6}$/.test(code)) setError("Enter a confirmation code of up to 6 digits.");
+      return;
+    }
     setCodeMessage("");
     setError("");
     setIsCodeLoading(true);
@@ -359,7 +362,7 @@ export default function RequestDetailsPage() {
                 <div className="request-code-entry">
                   <label htmlFor="meetup-code">{role === "male" ? "Enter Club Arrival Code" : "Enter Club Entry Code"}</label>
                   <div className="request-code-entry-row">
-                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\s/g, "").slice(0, 8))} inputMode="numeric" autoComplete="one-time-code" placeholder="Enter code" aria-label="Meetup or entry code" disabled={isCodeLoading} />
+                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{1,6}" placeholder="Up to 6 digits" aria-label="Meetup or entry code" disabled={isCodeLoading} />
                     <button className="button request-code-submit" type="button" onClick={() => void submitMeetupCode()} disabled={isCodeLoading || !meetupCode.trim()}>{isCodeLoading ? "Verifying..." : "Verify code"}</button>
                   </div>
                   {codeMessage && <p className="request-payment-success" role="status">{codeMessage}</p>}

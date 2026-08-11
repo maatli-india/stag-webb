@@ -112,9 +112,14 @@ export type LedgerItem = {
   id?: string;
   type?: "EARNING" | "PAYOUT" | "PENALTY" | string;
   finalAmount?: number;
+  basePrice?: number;
+  platformFee?: number;
+  gst?: number;
+  penalty?: number;
   createdAt?: string;
   settlementStatus?: string;
   metadata?: { reason?: string };
+  requestId?: string;
   requestIds?: string[];
   referenceId?: string;
 };

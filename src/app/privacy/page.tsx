@@ -50,10 +50,8 @@ export default function PrivacyPage() {
             features.
           </li>
           <li>
-            <strong>Transaction records:</strong> payment, refund, payout, and
-            platform-fee status. Full card or bank credentials are handled by
-            authorised payment providers and are not intended to be stored by
-            STAG.
+            <strong>Activity records:</strong> request, event, venue,
+            confirmation, and support activity associated with your account.
           </li>
         </ul>
         <h2>2. Information collected automatically</h2>
@@ -79,7 +77,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             To support verification, arrival confirmation, request completion,
-            refunds, and eligible platform payouts.
+            and event coordination.
           </li>
           <li>
             To send service messages, security alerts, confirmations, and
@@ -110,9 +108,8 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong>With service providers:</strong> hosting, authentication,
-            communications, analytics, customer support, payment processing,
-            payout processing, and security providers acting on our
-            instructions.
+            communications, analytics, customer support, and security providers
+            acting on our instructions.
           </li>
           <li>
             <strong>With venues or operational partners:</strong> information
@@ -129,15 +126,7 @@ export default function PrivacyPage() {
             applicable confidentiality and legal requirements.
           </li>
         </ul>
-        <h2>5. Payments and financial information</h2>
-        <p>
-          STAG uses third-party payment and payout providers. We may receive
-          status, reference, amount, currency, refund, and payout records, but
-          payment credentials are submitted directly to the relevant provider.
-          Do not share card numbers, banking passwords, UPI PINs, OTPs, or other
-          financial credentials with another user or with STAG support.
-        </p>
-        <h2>6. Data security</h2>
+        <h2>5. Data security</h2>
         <p>
           We use reasonable administrative, technical, and organisational
           measures designed to protect information from unauthorised access,
@@ -146,7 +135,7 @@ export default function PrivacyPage() {
           password, keeping credentials confidential, and notifying us promptly
           if you suspect unauthorised account activity.
         </p>
-        <h2>7. Retention</h2>
+        <h2>6. Retention</h2>
         <p>
           We retain information for as long as reasonably necessary to provide
           the service, maintain business and transaction records, resolve
@@ -155,7 +144,7 @@ export default function PrivacyPage() {
           sensitivity of information. When information is no longer needed, we
           take reasonable steps to delete or anonymise it.
         </p>
-        <h2>8. Your choices and rights</h2>
+        <h2>7. Your choices and rights</h2>
         <ul>
           <li>
             Review or update information in your account where the feature is
@@ -180,6 +169,23 @@ export default function PrivacyPage() {
           Some information may be retained where required by law or needed for
           legitimate security, fraud-prevention, accounting, or
           dispute-resolution purposes.
+        </p>
+        <h2>8. Account deletion</h2>
+        <p>
+          When you request account deletion, your account remains recoverable
+          for 30 days. You may retain and restore your account during this
+          period by contacting STAG support. After 30 days, your account will
+          be permanently removed and cannot be restored. We may retain limited
+          information where required by law or needed for security, fraud
+          prevention, accounting, or dispute resolution.
+        </p>
+        <p>
+          For account deletion or privacy requests, contact{" "}
+          <a className="text-link" href="mailto:info@stag.org.in">
+            info@stag.org.in
+          </a>
+          . Include your registered email address and clearly state whether you
+          want to delete or retain your account.
         </p>
         <h2>9. Children</h2>
         <p>

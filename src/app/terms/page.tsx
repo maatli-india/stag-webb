@@ -35,10 +35,9 @@ export default function TermsPage() {
           rules, capacity, safety requirements, and management decision.
         </p>
         <p>
-          STAG is not a dating service, escort service, employment agency,
-          nightlife promoter, or general social-meetup platform. The service
-          must not be used to arrange prostitution, sexual services,
-          trafficking, exploitation, or any unlawful activity.
+          STAG is a social event planning platform. The service must not be used
+          to arrange sexual services, trafficking, exploitation, or any unlawful
+          activity.
         </p>
         <p>
           Registered users are independent users of the platform. They are not
@@ -80,49 +79,17 @@ export default function TermsPage() {
           fees, cancellation terms, and any instructions before confirming.
         </p>
         <p>
-          At the venue, follow staff instructions and use the applicable Club
-          Arrival Code or Club Entry Code only for its intended purpose. Do not
-          share codes publicly, transfer them to another person, alter them, or
-          use them to bypass venue procedures.
+          At the venue, follow staff instructions and use any applicable
+          arrival or entry code only for its intended purpose. Do not share
+          codes publicly, transfer them to another person, alter them, or use
+          them to bypass venue procedures.
         </p>
-        <h2>4. Payments and platform payouts</h2>
-        <ul>
-          <li>
-            Where a payment is required, it must be made to STAG through the
-            payment method shown in the platform.
-          </li>
-          <li>
-            STAG acts as the platform intermediary for the applicable
-            collection, refund, and eligible payout flow.
-          </li>
-          <li>
-            Users must not request or send direct payments, cash, card details,
-            UPI PINs, OTPs, or banking credentials to another user.
-          </li>
-          <li>
-            Any eligible payout is processed by STAG to the registered account
-            after the relevant completion and verification requirements are
-            satisfied.
-          </li>
-          <li>
-            Payment-provider, bank, identity, tax, fraud, or compliance checks
-            may delay or prevent a transaction or payout.
-          </li>
-        </ul>
+        <h2>4. Plans, requests, and no-shows</h2>
         <p>
-          Amounts, platform fees, taxes where applicable, and payout conditions
-          are shown before the relevant action. You are responsible for
-          reviewing them and providing accurate payout information.
-        </p>
-        <h2>5. Cancellations, refunds, and no-shows</h2>
-        <p>
-          Cancellation and refund outcomes depend on the policy and terms
-          displayed for the particular request. Eligible refunds are generally
-          returned through the original payment method and may take additional
-          time to appear because of payment-provider or bank processing. A
-          refund may not be available for late cancellation, no-show, venue
-          refusal caused by the user, inaccurate information, or a breach of
-          these Terms unless required by law or approved by STAG.
+          Review the event, venue, date, time, and participation details before
+          sending or accepting a request. A request is not a guarantee that an
+          event or venue will remain available. Follow the applicable event and
+          venue rules, and contact support if a confirmed plan cannot proceed.
         </p>
         <p>
           STAG may cancel or modify a request when a venue is unavailable, a
@@ -148,8 +115,7 @@ export default function TermsPage() {
             verification material.
           </li>
           <li>
-            Attempt to manipulate requests, reviews, codes, status, payments,
-            refunds, or payouts.
+            Attempt to manipulate requests, reviews, codes, or status.
           </li>
           <li>
             Scrape, reverse engineer, disrupt, overload, or gain unauthorised
@@ -171,15 +137,14 @@ export default function TermsPage() {
             support@stag.org.in
           </a>
           . We may review reports and relevant platform information, restrict
-          features, remove content, cancel requests, withhold or reverse an
-          eligible payout where permitted, suspend accounts, or permanently
-          terminate access. We may preserve information and cooperate with
+          features, remove content, cancel requests, suspend accounts, or
+          permanently terminate access. We may preserve information and cooperate with
           lawful authorities when necessary.
         </p>
         <h2>8. Third-party venues and service providers</h2>
         <p>
-          Venues, payment providers, mapping services, communications providers,
-          and other partners may have their own terms and privacy policies. STAG
+          Venues, mapping services, communications providers, and other partners
+          may have their own terms and privacy policies. STAG
           is not responsible for independent third-party systems, venue
           policies, venue conditions, or acts and omissions outside STAG&apos;s
           reasonable control.
@@ -218,8 +183,8 @@ export default function TermsPage() {
           access immediately where reasonably necessary for safety, fraud
           prevention, legal compliance, service integrity, or a breach of these
           Terms. Provisions that by their nature should continue, including
-          payment records, intellectual property, disclaimers, liability,
-          indemnity, and dispute provisions, will survive termination.
+          intellectual property, disclaimers, liability, indemnity, and dispute
+          provisions will survive termination.
         </p>
         <h2>13. Governing law and disputes</h2>
         <p>

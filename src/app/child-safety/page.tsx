@@ -6,7 +6,7 @@ export default function ChildSafetyPage() {
   return (
     <>
       <PageIntro
-        eyebrow="CHILD SAFETY"
+        eyebrow="SAFETY"
         title="STAG is an adults-only platform."
         description="We do not knowingly permit anyone under 18 to create an account or use the service."
       />
@@ -82,7 +82,7 @@ export default function ChildSafetyPage() {
           </a>
           . Include the username, profile, request, message, date, or other
           details that help us identify the concern. Do not include passwords,
-          OTPs, payment PINs, or other account credentials.
+          OTPs or other account credentials.
         </p>
         <p>
           Do not download, copy, forward, or redistribute suspected child sexual

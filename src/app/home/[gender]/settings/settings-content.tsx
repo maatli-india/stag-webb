@@ -176,7 +176,7 @@ export default function SettingsContent({ gender }: { gender: string }) {
           <div className="profile-option-heading">
             <strong>Privacy</strong>
             <small>
-              Review how STAG handles account, profile, request, and payment
+              Review how STAG handles account, profile, request, and privacy
               information.
             </small>
             <Link
@@ -193,7 +193,7 @@ export default function SettingsContent({ gender }: { gender: string }) {
             <small>
               Deleting your account permanently removes your STAG profile and
               ends access to the service. We may retain limited records where
-              required for legal, fraud-prevention, payment, or
+              required for legal, fraud-prevention, accounting, or
               dispute-resolution purposes.
             </small>
             <p className="settings-delete-policy">

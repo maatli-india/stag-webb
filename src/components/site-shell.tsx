@@ -10,7 +10,7 @@ const navLinks = [
   ["How it works", "/#how-it-works"],
   ["About", "/about"],
   ["FAQ", "/faq"],
-  ["Contact", "/#contact"],
+  ["Contact", "/support"],
 ];
 
 export function SiteHeader() {
@@ -48,6 +48,7 @@ export function SiteFooter() {
             <span>Explore</span>
             <Link href="/about">About STAG</Link>
             <Link href="/faq">FAQ</Link>
+            <Link href="/support">Support</Link>
             <Link href="/#how-it-works">How it works</Link>
           </div>
           <div>
@@ -59,7 +60,7 @@ export function SiteFooter() {
           <div>
             <span>Start here</span>
             <Link href="/signup">Create account</Link>
-            <a href="mailto:info@stag.org.in">Contact support</a>
+            <Link href="/support">Contact support</Link>
           </div>
         </div>
       </div>

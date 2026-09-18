@@ -144,11 +144,10 @@ export default function RequestsPage() {
 function getStatusLabel(request: ActiveRequest, role: string) {
   if (["cancelled", "canceled"].includes(request.status || "")) return "Cancelled";
   if (request.status === "completed") return "Completed";
-  if (request.payment?.paymentStatus === "completed" || request.status === "confirmed") return "Confirmed";
+  if (request.status === "confirmed") return "Confirmed";
   if (request.status === "verified") return "Verified";
   if (request.status === "pending") return role === "female" ? "Your response needed" : "Response pending";
-  if (request.status === "accepted" || request.status === "confirm_intended") return role === "female" ? "Accepted" : "Pay to confirm";
-  if (request.status === "payment_initiated") return "Payment processing";
+  if (request.status === "accepted" || request.status === "confirm_intended") return "Accepted";
   if (["rejected", "declined", "refused"].includes(request.status || "")) return "Not accepted";
   return "Request updated";
 }

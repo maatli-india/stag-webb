@@ -2,18 +2,17 @@ import Link from "next/link";
 
 const policySections = [
   [
-    "Platform payout",
+    "Club Entry Assistance",
     [
-      "STAG releases your platform payout once the club entry is successfully completed and the Entry Code is verified.",
-      "STAG credits the platform payout to your registered bank account within one week of entry completion.",
+      "Connecting with a registered member for club entry assistance is a free feature — STAG does not charge for it, and no payment or payout passes between users.",
+      "Repeated cancellations after a request is accepted may affect your ability to send or receive new requests.",
     ],
   ],
   [
-    "Cancellation",
+    "Request Credits",
     [
-      "If you cancel a request after STAG has processed the platform payment, some amount may be deducted from your platform payout as a cancellation charge.",
-      "Repeated cancellations after acceptance may affect your profile visibility on the platform.",
-      "If the requesting user cancels after STAG processes the payment, it does not affect your platform payout for completed entries.",
+      "Purchased request credit packages are non-refundable and non-cancellable once purchased.",
+      "Failed or duplicate credit-package transactions will be automatically refunded to your original payment method.",
     ],
   ],
 ] as const;
@@ -34,9 +33,9 @@ export default async function PolicyPage({
       </Link>
       <header className="app-option-heading">
         <p className="eyebrow">POLICY</p>
-        <h1>Service fee &amp; cancellation.</h1>
+        <h1>Entry assistance &amp; request credits.</h1>
         <p className="lede">
-          How eligible platform payouts and cancellations work on STAG.
+          How club entry assistance and request credits work on STAG.
         </p>
       </header>
       <div className="policy-page-content">

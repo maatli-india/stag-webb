@@ -6,11 +6,9 @@ import { useParams, useRouter } from "next/navigation";
 import {
   createEntryRequest,
   fetchBlockedUsers,
-  fetchPaymentBreakdown,
   fetchPlaceDetails,
   fetchUserDetails,
   PlaceDetails,
-  PaymentBreakdown,
   toggleBlockUser,
   UserProfile,
 } from "@/lib/api";
@@ -26,7 +24,6 @@ export default function UserProfilePage() {
   const userId = decodeURIComponent(params.userId || "");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
-  const [paymentBreakdown, setPaymentBreakdown] = useState<PaymentBreakdown | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -64,10 +61,6 @@ export default function UserProfilePage() {
 
     fetchBlockedUsers()
       .then((blockedUsers) => setIsBlocked(blockedUsers.some((blockedUser) => blockedUser.id === userId)))
-      .catch(() => {});
-
-    fetchPaymentBreakdown(userId)
-      .then(setPaymentBreakdown)
       .catch(() => {});
   }, [placeId, router, userId]);
 
@@ -131,8 +124,6 @@ export default function UserProfilePage() {
     window.location.href = `mailto:support@stag.org.in?subject=${subject}&body=${body}`;
   };
 
-  const stagEntryFee = (paymentBreakdown?.mUserBaseAmount ?? profile?.chargeAmount ?? 0) + (paymentBreakdown?.platformFee ?? 0);
-
   return (
     <section className="app-placeholder content-width user-profile-page">
       <Link className="text-link venue-back-link" href={`/home/${role}/venues/${encodeURIComponent(placeId)}`}><span>←</span> Back to entry partners</Link>
@@ -157,7 +148,6 @@ export default function UserProfilePage() {
               <div className="user-profile-stats">
                 <div><strong>{profile.entryCount ?? 0}</strong><span>Entries helped</span></div>
                 {profile.dateOfBirth && <div><strong>{calculateAge(profile.dateOfBirth) || "-"}</strong><span>Years old</span></div>}
-                {typeof profile.chargeAmount === "number" && <div><strong>₹{formatAmount(profile.chargeAmount)}</strong><span>STAG entry fee</span></div>}
               </div>
 
               {message && <p className="form-message form-success" role="status">{message}</p>}
@@ -168,13 +158,6 @@ export default function UserProfilePage() {
                   <p className="eyebrow">REQUEST ENTRY HELP</p>
                   <h2>Choose a date and time.</h2>
                   <p>Send an entry request for {placeDetails?.name || "this venue"}.</p>
-                  {paymentBreakdown && (
-                    <div className="payment-breakdown" aria-label="STAG payment breakdown">
-                      <div><span>STAG entry fee</span><strong>₹{formatAmount(stagEntryFee)}</strong></div>
-                      <div><span>GST</span><strong>₹{formatAmount(paymentBreakdown.gst ?? 0)}</strong></div>
-                      <div className="payment-breakdown-total"><span>Total payable to STAG</span><strong>₹{formatAmount(paymentBreakdown.total ?? 0)}</strong></div>
-                    </div>
-                  )}
                   <aside className="entry-guidelines" aria-label="Entry-only guidelines">
                     <p className="eyebrow">ENTRY-ONLY GUIDELINES</p>
                     <h3>Keep the request respectful and venue-focused.</h3>
@@ -238,7 +221,7 @@ export default function UserProfilePage() {
           <section className="action-modal request-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="request-confirmation-title">
             <p className="eyebrow">REQUEST SENT</p>
             <h2 id="request-confirmation-title">Your request is on its way.</h2>
-            <p className="action-modal-copy">Your entry request for {formatRequestDateTime(requestDateTime)} at {placeDetails?.name || "this venue"} has been sent. You will need to pay and confirm once it is accepted.</p>
+            <p className="action-modal-copy">Your entry request for {formatRequestDateTime(requestDateTime)} at {placeDetails?.name || "this venue"} has been sent. You&apos;ll be notified once it is accepted.</p>
             <button className="button button-primary" type="button" onClick={() => router.push(`/home/${role}/venues/${encodeURIComponent(placeId)}`)}>Back to entry partners</button>
           </section>
         </div>
@@ -277,10 +260,6 @@ function calculateAge(value: string) {
   let age = today.getFullYear() - birthDate.getFullYear();
   if (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) age--;
   return age > 0 ? age : null;
-}
-
-function formatAmount(amount: number) {
-  return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(amount);
 }
 
 function formatRequestDateTime(value: string) {

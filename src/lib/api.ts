@@ -96,45 +96,6 @@ export function toggleUserAvailability() {
   return request<{ message?: string }>("users/toggle-available", { method: "PATCH", body: JSON.stringify({}) });
 }
 
-export function updateEntryFee(chargeAmount: number) {
-  return request<{ message?: string }>("users/fee", { method: "PATCH", body: JSON.stringify({ chargeAmount }) });
-}
-
-export function addBankAccount(payload: { accountHolderName: string; accountNumber: string; confirmAccountNumber: string; ifsc: string }) {
-  return request<{ message?: string }>("users/bank-account", { method: "POST", body: JSON.stringify(payload) });
-}
-
-export function fetchBankAccount(userId: string) {
-  return request<unknown>(`users/${encodeURIComponent(userId)}/bank-account`, { method: "GET" });
-}
-
-export type LedgerItem = {
-  id?: string;
-  type?: "EARNING" | "PAYOUT" | "PENALTY" | string;
-  finalAmount?: number;
-  basePrice?: number;
-  platformFee?: number;
-  gst?: number;
-  penalty?: number;
-  createdAt?: string;
-  settlementStatus?: string;
-  metadata?: { reason?: string };
-  requestId?: string;
-  requestIds?: string[];
-  referenceId?: string;
-};
-
-export type LedgerResponse = {
-  items?: LedgerItem[];
-  total?: number;
-  limit?: number;
-  summary?: { totalEarning?: number };
-};
-
-export function fetchUserLedger(userId: string, page = 1, limit = 50) {
-  return request<LedgerResponse>(`payment/users/${encodeURIComponent(userId)}/ledger?page=${page}&limit=${limit}`, { method: "GET" });
-}
-
 export function requestAccountDeletion() {
   return request<{ message?: string }>("users/delete", { method: "DELETE" });
 }
@@ -226,13 +187,6 @@ export function verifyMeetupEntryCode(requestId: string, otp: string, coordinate
   });
 }
 
-export function confirmRequestForPayment(requestId: string, fUserId: string) {
-  return request<ActiveRequest>(`request/${encodeURIComponent(requestId)}/confirm`, {
-    method: "POST",
-    body: JSON.stringify({ fUserId }),
-  });
-}
-
 export type Venue = {
   place_id?: string;
   name?: string;
@@ -264,38 +218,6 @@ export type PlaceDetails = {
   opening_hours?: { open_now?: boolean; weekday_text?: string[] };
 };
 
-export type PaymentBreakdown = {
-  baseAmount?: number;
-  mUserBaseAmount?: number;
-  fUserBaseAmount?: number;
-  platformFee?: number;
-  gst?: number;
-  total?: number;
-  role?: "male" | "female";
-};
-
-export type PaymentOrder = {
-  orderId?: string;
-  amount?: number;
-  currency?: string;
-  keyId?: string;
-  key?: string;
-};
-
-export function createPaymentOrder(payload: {
-  amount: number;
-  currency: string;
-  description: string;
-  entityType: "request";
-  entityDetails: { requestId: string; fUserId?: string };
-}) {
-  return request<PaymentOrder>("payment/create-order", { method: "POST", body: JSON.stringify(payload) });
-}
-
-export function verifyPayment(payload: { orderId: string; requestId: string; status: "completed" }) {
-  return request<{ message?: string; request?: ActiveRequest }>("payment/verify", { method: "POST", body: JSON.stringify(payload) });
-}
-
 export type ActiveRequest = {
   id?: string;
   status?: string;
@@ -312,7 +234,6 @@ export type ActiveRequest = {
   chatId?: string;
   mUser?: RequestUser;
   fUser?: RequestUser;
-  payment?: RequestPayment;
 };
 
 export type RequestUser = {
@@ -325,23 +246,6 @@ export type RequestUser = {
   otp?: string;
 };
 
-export type RequestPayment = {
-  fUserBaseAmount?: number;
-  mUserBaseAmount?: number;
-  mUserPlatformFee?: number;
-  mUserGST?: number;
-  mUserTotalPayable?: number;
-  fUserPlatformFee?: number;
-  fUserGST?: number;
-  fUserNetPayout?: number;
-  paymentStatus?: string;
-  payoutStatus?: string;
-  refundAmount?: number;
-  refundId?: string;
-  refundStatus?: string;
-  refundProcessedAt?: string;
-};
-
 export type CompanionUser = {
   id?: string;
   name?: string;
@@ -350,9 +254,6 @@ export type CompanionUser = {
   selfieVerified?: boolean;
   isPlannedVisit?: boolean;
   plannedVisitAt?: string;
-  plannedEntryFee?: number;
-  companionFee?: number;
-  chargeAmount?: number;
 };
 
 export type PagedRequests = {
@@ -374,11 +275,11 @@ export function fetchPlaceDetails(placeId: string) {
   return request<PlaceDetails>(`places/details?place_id=${encodeURIComponent(placeId)}`, { method: "GET" });
 }
 
-export function publishVisitPlan(payload: { lat: number; lng: number; placeId: string; clubName: string; clubAddress: string; visitDatetime: string; entryFee: number; platformFee: number; netPayout: number }) {
+export function publishVisitPlan(payload: { lat: number; lng: number; placeId: string; clubName: string; clubAddress: string; visitDatetime: string }) {
   return request<{ message?: string }>("club-visit-plans", { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function updateVisitPlan(planId: string, payload: { lat: number; lng: number; placeId: string; clubName: string; clubAddress: string; visitDatetime: string; entryFee: number; platformFee: number; netPayout: number }) {
+export function updateVisitPlan(planId: string, payload: { lat: number; lng: number; placeId: string; clubName: string; clubAddress: string; visitDatetime: string }) {
   return request<{ message?: string }>(`club-visit-plans/${encodeURIComponent(planId)}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
@@ -391,9 +292,117 @@ export type VisitPlan = {
   lat?: number;
   lng?: number;
   visitDatetime?: string;
-  entryFee?: number;
-  netPayout?: number;
 };
+
+export type RewardHistoryEntry = {
+  id?: string;
+  points?: number;
+  type?: string;
+  description?: string;
+  createdAt?: string;
+};
+
+export type RewardLevel = {
+  name?: string;
+  minimumPoints?: number;
+  credits?: number;
+  merchandise?: string;
+  imageUrl?: string;
+};
+
+export type Merchandise = {
+  id?: string;
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  pointsRequired?: number;
+  variants?: Array<{ id?: string; name?: string; stock?: number }>;
+  stock?: number;
+  active?: boolean;
+};
+
+export type RewardsResponse = {
+  points?: number;
+  level?: string;
+  levelPoints?: number;
+  nextLevelPoints?: number;
+  levelRewards?: RewardLevel[];
+  merchandise?: Merchandise[];
+  leaderboardRank?: number;
+  leaderboard?: Array<{ rank?: number; userId?: string; name?: string; profilePicUrl?: string; points?: number }>;
+  history?: RewardHistoryEntry[];
+  referralCode?: string;
+};
+
+export type DeliveryAddress = {
+  id?: string;
+  name?: string;
+  phone?: string;
+  line1?: string;
+  line2?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+};
+
+export type RedemptionOrder = {
+  id?: string;
+  orderId?: string;
+  merchandiseName?: string;
+  variantName?: string;
+  points?: number;
+  status?: string;
+  trackingNumber?: string;
+  createdAt?: string;
+};
+
+export function fetchRewards() {
+  return request<RewardsResponse>("request/rewards", { method: "GET" });
+}
+
+export function fetchRewardHistory() {
+  return request<RewardHistoryEntry[] | { items?: RewardHistoryEntry[]; data?: RewardHistoryEntry[] }>("request/rewards/history", { method: "GET" }).then((response) =>
+    Array.isArray(response) ? response : response.items || response.data || [],
+  );
+}
+
+export function fetchMerchandise() {
+  return request<{ items?: Merchandise[] } | Merchandise[]>("request/merchandise", { method: "GET" }).then((response) => Array.isArray(response) ? response : response.items || []);
+}
+
+export type UserSubscription = SubscriptionPlan & {
+  planId?: string;
+  creditsLeft?: number;
+  status?: string;
+  expiresAt?: string;
+};
+
+export type UserSubscriptionsResponse = {
+  dailyAllowance?: number;
+  dailyUsed?: number;
+  live?: { items?: UserSubscription[] };
+  older?: { items?: UserSubscription[] };
+};
+
+export function fetchUserSubscriptions(userId: string) {
+  return request<UserSubscriptionsResponse>(`subscription/user/${encodeURIComponent(userId)}`, { method: "GET" });
+}
+
+export function fetchRewardAddresses() {
+  return request<{ items?: DeliveryAddress[] }>("request/rewards/addresses", { method: "GET" }).then((response) => response.items || []);
+}
+
+export function createRewardAddress(payload: Omit<DeliveryAddress, "id">) {
+  return request<DeliveryAddress>("request/rewards/addresses", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function redeemReward(payload: { merchandiseId: string; variantId?: string; addressId: string }) {
+  return request<RedemptionOrder>("request/rewards/redeem", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function fetchRewardOrders() {
+  return request<{ items?: RedemptionOrder[] }>("request/rewards/orders", { method: "GET" }).then((response) => response.items || []);
+}
 
 export function fetchMyVisitPlans() {
   return request<VisitPlan[] | { items?: VisitPlan[] }>("club-visit-plans/mine/all", { method: "GET" }).then((response) => Array.isArray(response) ? response : response.items || []);
@@ -401,11 +410,6 @@ export function fetchMyVisitPlans() {
 
 export function deleteVisitPlan(planId: string) {
   return request<{ message?: string }>(`club-visit-plans/${encodeURIComponent(planId)}`, { method: "DELETE" });
-}
-
-export function fetchPaymentBreakdown(fUserId: string, entryFee?: number) {
-  const query = entryFee == null ? "" : `?entryFee=${encodeURIComponent(entryFee)}`;
-  return request<PaymentBreakdown>(`pricing-breakdown/${encodeURIComponent(fUserId)}${query}`, { method: "GET" });
 }
 
 export function fetchSearchSuggestions(input: string) {
@@ -437,4 +441,114 @@ export function fetchUserRequests(userId: string, options: { status?: string; ti
   if (options.page) params.set("page", String(options.page));
   if (options.limit) params.set("limit", String(options.limit));
   return request<PagedRequests>(`request/user/${encodeURIComponent(userId)}?${params.toString()}`, { method: "GET" });
+}
+
+// ── Admin: session role ──────────────────────────────────────────────────
+
+export function decodeJwtRole(token: string | null): string | undefined {
+  if (!token) return undefined;
+  try {
+    const base64 = token.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/");
+    if (!base64) return undefined;
+    const payload = JSON.parse(atob(base64)) as { role?: string };
+    return payload.role;
+  } catch {
+    return undefined;
+  }
+}
+
+// ── Admin: events ─────────────────────────────────────────────────────────
+
+export type AdminEvent = {
+  id?: string;
+  _id?: string;
+  eventId?: string;
+  name?: string;
+  description?: string;
+  additionalInformation?: string;
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  venue?: string;
+  category?: string;
+  entryType?: "free" | "paid" | string;
+  price?: number;
+  capacity?: number;
+  contactNumber?: string;
+  status?: "draft" | "posted" | string;
+};
+
+export function fetchMyEvents(options: { page?: number; limit?: number; status?: string } = {}) {
+  const params = new URLSearchParams({
+    page: String(options.page ?? 1),
+    limit: String(options.limit ?? 50),
+  });
+  if (options.status) params.set("status", options.status);
+  return request<
+    { items?: AdminEvent[]; events?: AdminEvent[]; data?: { items?: AdminEvent[] } } | AdminEvent[]
+  >(`event?${params.toString()}`, { method: "GET" }).then((response) =>
+    Array.isArray(response)
+      ? response
+      : response?.data?.items || response?.items || response?.events || [],
+  );
+}
+
+export type EventPayload = {
+  name: string;
+  description?: string;
+  additionalInformation?: string;
+  date: string;
+  startTime: string;
+  endTime?: string;
+  venue: string;
+  category?: string;
+  entryType: "free" | "paid";
+  price?: number;
+  capacity?: number;
+  contactNumber?: string;
+  status: "draft" | "posted";
+};
+
+export function createEvent(payload: EventPayload) {
+  return request<AdminEvent>("event", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function updateEvent(eventId: string, payload: EventPayload) {
+  return request<AdminEvent>(`event/${encodeURIComponent(eventId)}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export function deleteEvent(eventId: string) {
+  return request<{ message?: string }>(`event/${encodeURIComponent(eventId)}`, { method: "DELETE" });
+}
+
+// ── Admin: subscription plans ────────────────────────────────────────────
+
+export type SubscriptionPlan = {
+  id?: string;
+  name?: string;
+  description?: string;
+  cost?: number;
+  currency?: string;
+  creditCount?: number;
+  purpose?: string;
+  neverExpires?: boolean;
+  expiryDays?: number;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export function fetchSubscriptionPlans() {
+  return request<
+    SubscriptionPlan[] | { items?: SubscriptionPlan[]; data?: { items?: SubscriptionPlan[] } }
+  >("subscription/plans", { method: "GET" }).then((response) =>
+    Array.isArray(response) ? response : response?.data?.items || response?.items || [],
+  );
+}
+
+export function updateSubscriptionPlanDescription(planId: string, description: string) {
+  return request<SubscriptionPlan>(`subscription/plans/${encodeURIComponent(planId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ description }),
+  });
 }

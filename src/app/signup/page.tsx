@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
-import { createUser, generateOtp, updateUserDetailsForProfileUpload, uploadProfilePicture, validateOtp } from "@/lib/api";
+import { createUser, decodeJwtRole, generateOtp, updateUserDetailsForProfileUpload, uploadProfilePicture, validateOtp } from "@/lib/api";
 
 type SignupStep = "phone" | "otp" | "details";
 
@@ -59,7 +59,10 @@ export default function SignupPage() {
       const response = await validateOtp(phone, otp);
       if (response.isNewUser === false) {
         persistSession(response);
-        window.location.assign(getHomePath(response.userDetails?.gender));
+        const role = decodeJwtRole(response.token?.accessToken || null);
+        window.location.assign(
+          role === "admin" ? "/admin" : getHomePath(response.userDetails?.gender),
+        );
         return;
       }
       setStep("details");
@@ -126,9 +129,6 @@ export default function SignupPage() {
       if (profilePicture && userId) {
         const uploadMeta = await uploadProfilePicture(profilePicture, userId);
         await updateUserDetailsForProfileUpload(userId, { name: fullName.trim(), email: email.trim().toLowerCase(), gender, phone, dateOfBirth: formatDateForApi(dateOfBirth), profilePicId: uploadMeta.fileId });
-      }
-      if (gender === "female") {
-        window.localStorage.setItem("stag_new_fuser_onboarding", "true");
       }
       window.location.assign(
         getHomePath(response.userDetails?.gender || gender),

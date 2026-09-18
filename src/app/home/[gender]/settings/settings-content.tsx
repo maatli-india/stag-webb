@@ -102,6 +102,27 @@ export default function SettingsContent({ gender }: { gender: string }) {
       <div className="profile-options">
         <section className="profile-option profile-option-static">
           <div className="profile-option-heading">
+            <strong>Request Credits</strong>
+            <small>Check your daily allowance and purchased request-credit plans.</small>
+            <Link className="text-link" href={`/home/${gender}/credits`}>View credits</Link>
+          </div>
+        </section>
+        <section className="profile-option profile-option-static">
+          <div className="profile-option-heading">
+            <strong>Subscription Plans</strong>
+            <small>Browse the available STAG Plus request-credit packages.</small>
+            <Link className="text-link" href={`/home/${gender}/subscriptions`}>View plans</Link>
+          </div>
+        </section>
+        <section className="profile-option profile-option-static">
+          <div className="profile-option-heading">
+            <strong>My Club Entries</strong>
+            <small>Review your completed, cancelled, and expired club entries.</small>
+            <Link className="text-link" href={`/home/${gender}/club-entries`}>View entries</Link>
+          </div>
+        </section>
+        <section className="profile-option profile-option-static">
+          <div className="profile-option-heading">
             <strong>Community Guidelines</strong>
             <small>
               Respect other members, venue staff, and security. Keep every

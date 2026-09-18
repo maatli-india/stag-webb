@@ -33,12 +33,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const appLinks = [
     ["Home", `/home/${gender}`],
     ["My Requests", `/home/${gender}/requests`],
-    ...(gender === "female"
-      ? [
-          ["My Plans", `/home/${gender}/plans`],
-          ["My Payments", `/home/${gender}/payments`],
-        ]
-      : []),
+    ["Visit Plans", `/home/${gender}/plans`],
+    ["Rewards", `/home/${gender}/rewards`],
     ["Settings", `/home/${gender}/settings`],
     ["About App", `/home/${gender}/about`],
     ["Support", `/home/${gender}/support`],
@@ -136,7 +132,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           const belongsToLoggedInUser =
             request.mUser?.id === userId || request.fUser?.id === userId;
           if (!belongsToLoggedInUser) return;
-          const state = `${request.status || ""}:${request.payment?.paymentStatus || ""}:${request.payment?.refundStatus || ""}:${request.payment?.refundAmount ?? ""}`;
+          const state = request.status || "";
           nextSnapshot[request.id] = state;
           const previousState = requestSnapshotRef.current[request.id];
           if (!isFirstPoll && (!previousState || previousState !== state))
@@ -246,6 +242,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <div className="profile-dropdown">
             <strong>{profile.name || "Your STAG profile"}</strong>
             <Link href={`/home/${gender}/profile`}>Edit Profile</Link>
+            <Link href={`/home/${gender}/credits`}>Request Credits</Link>
+            <Link href={`/home/${gender}/subscriptions`}>Subscription Plans</Link>
             <button
               className="profile-dropdown-logout"
               type="button"
@@ -321,16 +319,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
 }
 
 function getRequestAlertMessage(request: ActiveRequest, role: string) {
-  if (request.payment?.paymentStatus === "completed")
-    return "Payment confirmed. Your club entry request is now confirmed.";
-  if (request.status === "payment_initiated")
-    return role === "female"
-      ? "Payment processing for this request."
-      : "Payment processing. Check this request for the latest update.";
   if (["accepted", "confirm_intended"].includes(request.status || ""))
-    return role === "female"
-      ? "Your request was accepted."
-      : "Your request was accepted. Pay to confirm it.";
+    return "Your request was accepted.";
   if (request.status === "pending")
     return role === "female"
       ? "Your response is needed on a request."

@@ -1,4 +1,4 @@
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/stag/v1/").replace(/\/$/, "");
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api-dev.stag.org.in/stag/v1/").replace(/\/$/, "");
 const PROFILE_UPLOAD_API_BASE_URL = API_BASE_URL;
 
 type ApiError = Error & { status?: number; data?: unknown };

@@ -9,6 +9,7 @@ import {
   fetchPlaceDetails,
   PlaceDetails,
 } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
 export default function VenueCompanionsPage() {
   const params = useParams<{ gender: string; placeId: string }>();
@@ -149,20 +150,18 @@ export default function VenueCompanionsPage() {
               key={companion.id || index}
             >
               <div className="companion-card-header">
-                {companion.profilePicUrl ? (
-                  <img
-                    className="companion-avatar"
-                    src={companion.profilePicUrl}
-                    alt=""
-                  />
-                ) : (
-                  <div
-                    className="companion-avatar companion-avatar-placeholder"
-                    aria-hidden="true"
-                  >
-                    {getInitials(companion.name)}
-                  </div>
-                )}
+                <Avatar
+                  userId={companion.id}
+                  className="companion-avatar"
+                  fallback={
+                    <div
+                      className="companion-avatar companion-avatar-placeholder"
+                      aria-hidden="true"
+                    >
+                      {getInitials(companion.name)}
+                    </div>
+                  }
+                />
                 <div>
                   <h2>{companion.name || "STAG member"}</h2>
                   {companion.selfieVerified && (

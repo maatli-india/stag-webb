@@ -9,6 +9,7 @@ import {
   fetchActiveRequests,
   fetchUserDetails,
 } from "@/lib/api";
+import Avatar from "@/components/avatar";
 import type { ReactNode } from "react";
 
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -18,12 +19,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const requestSnapshotRef = useRef<Record<string, string>>({});
   const notificationAudioContextRef = useRef<AudioContext | null>(null);
   const gender = pathname.split("/")[2] === "female" ? "female" : "male";
-  const [profile, setProfile] = useState<{
-    name?: string;
-    profilePicUrl?: string;
-    profilePic?: string;
-    profilePicture?: string;
-  }>({});
+  const [profile, setProfile] = useState<{ name?: string }>({});
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [requestAlert, setRequestAlert] = useState<{
     requestId: string;
@@ -42,6 +39,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const userId = window.localStorage.getItem("stag_user_id");
+    setProfileUserId(userId);
     if (userId)
       fetchUserDetails(userId)
         .then(setProfile)
@@ -174,8 +172,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("pointerdown", closeProfileMenu);
   }, []);
 
-  const profileImage =
-    profile.profilePicUrl || profile.profilePic || profile.profilePicture;
   const initials = (profile.name || "STAG")
     .split(" ")
     .filter(Boolean)
@@ -225,16 +221,12 @@ export function AuthShell({ children }: { children: ReactNode }) {
         </nav>
         <details ref={profileMenuRef} className="profile-menu">
           <summary className="profile-trigger" aria-label="Open profile menu">
-            <span
+            <Avatar
+              userId={profileUserId}
+              size={36}
               className={`profile-avatar profile-avatar-${gender}`}
-              style={
-                profileImage
-                  ? { backgroundImage: `url(${profileImage})` }
-                  : undefined
-              }
-            >
-              {profileImage ? "" : initials}
-            </span>
+              fallback={<span className={`profile-avatar profile-avatar-${gender}`}>{initials}</span>}
+            />
             <span className="profile-name">
               {profile.name ? `Hi, ${profile.name.split(" ")[0]}` : "Profile"}
             </span>

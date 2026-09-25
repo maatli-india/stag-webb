@@ -3,13 +3,15 @@
  import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
  import { useParams, useRouter } from "next/navigation";
-import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails, updateUserDetailsForProfileUpload, uploadProfilePicture as uploadProfilePictureFile, UserProfile } from "@/lib/api";
+import { deleteProfilePicture, fetchUserDetails, toggleUserAvailability, updateUserDetails, uploadProfilePictureToKosh, UserProfile } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
  export default function ProfilePage() {
    const params = useParams<{ gender: string }>();
    const router = useRouter();
    const gender = params.gender?.toLowerCase() === "female" ? "female" : "male";
    const [profile, setProfile] = useState<UserProfile | null>(null);
+   const [userId, setUserId] = useState<string | null>(null);
    const [name, setName] = useState("");
    const [email, setEmail] = useState("");
    const [dateOfBirth, setDateOfBirth] = useState("");
@@ -24,17 +26,18 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
    const [error, setError] = useState("");
 
    useEffect(() => {
-     const userId = window.localStorage.getItem("stag_user_id");
+     const resolvedUserId = window.localStorage.getItem("stag_user_id");
      if (!window.localStorage.getItem("stag_access_token")) {
        router.replace("/signup");
        return;
      }
-     if (!userId) {
+     if (!resolvedUserId) {
        setError("Your account could not be identified. Please sign in again.");
        setIsLoading(false);
        return;
      }
-     fetchUserDetails(userId)
+     setUserId(resolvedUserId);
+     fetchUserDetails(resolvedUserId)
        .then((details) => {
          setProfile(details);
          setName(details.name || "");
@@ -76,18 +79,23 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
      }
    };
 
-  const uploadProfilePicture = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
-    const userId = window.localStorage.getItem("stag_user_id");
     if (!file || !userId) return;
     setIsPhotoLoading(true);
     setError("");
     setMessage("");
     try {
-      const uploadMeta = await uploadProfilePictureFile(file, userId);
-      const updated = await updateUserDetailsForProfileUpload(userId, { name, email, gender: profile?.gender || gender, phone: profile?.phone || "", dateOfBirth, profilePicId: uploadMeta.fileId });
-      setProfile((current) => ({ ...current, ...updated, profilePicId: uploadMeta.fileId }));
+      const { fileId, status } = await uploadProfilePictureToKosh(file);
+      if (status === "failed") {
+        setError("Your photo could not be processed. Please try a different photo.");
+        return;
+      }
+      // READY or PENDING are both fine to attach — profilePicId is stable either way,
+      // PENDING just means it'll appear on the profile a little later.
+      const updated = await updateUserDetails(userId, { name, email, gender: profile?.gender || gender, phone: profile?.phone || "", dateOfBirth, profilePicId: fileId });
+      setProfile((current) => ({ ...current, ...updated }));
       setMessage("Profile picture updated successfully.");
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "We could not upload your profile picture. Please try again.");
@@ -122,8 +130,7 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
   };
 
   const removeProfilePicture = async () => {
-    const userId = window.localStorage.getItem("stag_user_id");
-    if (!userId || !profile?.profilePicId) {
+    if (!profile?.profilePicFileId) {
       setError("This profile picture cannot be removed here. Please upload a new picture first.");
       return;
     }
@@ -132,9 +139,8 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
     setError("");
     setMessage("");
     try {
-      await deleteFile(profile.profilePicId);
-      const updated = await updateUserDetailsForProfileUpload(userId, { name, email, gender: profile.gender || gender, phone: profile.phone || "", dateOfBirth, profilePicId: "" });
-      setProfile((current) => ({ ...current, ...updated, profilePicId: "", profilePicUrl: "" }));
+      await deleteProfilePicture();
+      setProfile((current) => (current ? { ...current, profilePicFileId: undefined } : current));
       setMessage("Profile picture removed successfully.");
     } catch {
       setError("We could not remove your profile picture. Please try again.");
@@ -155,9 +161,13 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
                <p className="lede">Keep your account details accurate so requests, payments, and venue coordination stay clear.</p>
              </div>
              <div className="profile-edit-photo-wrap">
-               {profile?.profilePicUrl ? <button className="profile-edit-avatar-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="View profile picture"><img className="profile-edit-avatar profile-edit-avatar-image" src={profile.profilePicUrl} alt="Your profile" /></button> : <div className="profile-edit-avatar">{getInitials(profile?.name || name)}</div>}
-               <label className="profile-photo-upload">{isPhotoLoading ? "Updating..." : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadProfilePicture} disabled={isPhotoLoading} /></label>
-               {profile?.profilePicId && <button className="profile-photo-delete" type="button" onClick={removeProfilePicture} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>}
+               {profile?.profilePicFileId ? (
+                 <button className="profile-edit-avatar-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="View profile picture">
+                   <Avatar userId={userId} className="profile-edit-avatar profile-edit-avatar-image" />
+                 </button>
+               ) : <div className="profile-edit-avatar">{getInitials(profile?.name || name)}</div>}
+               <label className="profile-photo-upload">{isPhotoLoading ? "Updating..." : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleProfilePictureChange(event)} disabled={isPhotoLoading} /></label>
+               {profile?.profilePicFileId && <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>}
              </div>
            </header>
            {message && <p className="form-message form-success" role="status">{message}</p>}
@@ -190,10 +200,10 @@ import { deleteFile, fetchUserDetails, toggleUserAvailability, updateUserDetails
                <div className="action-modal-buttons"><button className="button button-primary" type="button" disabled={isAvailabilitySaving} onClick={() => { setShowBreakConfirm(false); void updateAvailability(true); }}>{isAvailabilitySaving ? "Updating..." : "Take a break"}</button><button className="button button-quiet" type="button" onClick={() => setShowBreakConfirm(false)}>Cancel</button></div>
              </section>
            </div>}
-           {showProfileImage && profile?.profilePicUrl && (
+           {showProfileImage && profile?.profilePicFileId && (
              <div className="profile-image-modal" role="dialog" aria-modal="true" aria-label="Your profile picture" onClick={() => setShowProfileImage(false)}>
                <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
-               <img src={profile.profilePicUrl} alt="Your profile" onClick={(event) => event.stopPropagation()} />
+               <Avatar userId={userId} size={320} style={{ borderRadius: 0 }} />
              </div>
            )}
          </>

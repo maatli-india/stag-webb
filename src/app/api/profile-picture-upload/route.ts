@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getApiBaseUrl } from "@/lib/config";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api-dev.stag.org.in/stag/v1").replace(/\/$/, "");
+const API_BASE_URL = getApiBaseUrl();
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 

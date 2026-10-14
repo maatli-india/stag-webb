@@ -51,7 +51,7 @@ function PlanCard({
   featured: boolean;
   onPurchase: (plan: SubscriptionPlan) => void;
   plan: SubscriptionPlan;
-  purchasing: boolean;
+  purchasing: boolean; // true only for this specific plan
 }) {
   const points = String(plan.description || "Request credits for your next STAG experience.")
     .split(/\r?\n/)
@@ -89,7 +89,8 @@ export default function SubscriptionsPage() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [purchasing, setPurchasing] = useState(false);
+  // track by plan id so only the clicked button shows "Processing…"
+  const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [paymentNote, setPaymentNote] = useState<{ text: string; ok: boolean } | null>(null);
 
   // BE uses user.name + user.email when signing the PayU hash — FE must pass matching values.
@@ -112,7 +113,7 @@ export default function SubscriptionsPage() {
 
   async function handlePurchase(plan: SubscriptionPlan) {
     if (!plan.id || !userRef.current) return;
-    setPurchasing(true);
+    setPurchasingId(plan.id);
     setPaymentNote(null);
     setError("");
 
@@ -122,6 +123,7 @@ export default function SubscriptionsPage() {
 
       if (order.gateway !== "payu" || !order.keyId || !order.payuTxnId || !order.orderId) {
         setError("Online payment is not available right now. Please try the app.");
+        setPurchasingId(null);
         return;
       }
 
@@ -147,11 +149,11 @@ export default function SubscriptionsPage() {
           hash,
         },
         {
-          responseHandler: async (b) => {
+          responseHandler: (b) => {
             const ok = b.response.txnStatus?.toUpperCase() === "SUCCESS";
             const cancelled = b.response.txnStatus?.toUpperCase() === "CANCEL";
-            // Step 5: inform BE of outcome — credits are granted by webhook, this is a hint only
-            await verifyPaymentFromUI(order.orderId!, ok ? "completed" : "failed").catch(() => null);
+            // inform BE of outcome — credits are granted by webhook, not this call
+            verifyPaymentFromUI(order.orderId!, ok ? "completed" : "failed").catch(() => null);
             if (ok) {
               setPaymentNote({ text: "Payment successful! Your credits will be added shortly.", ok: true });
             } else if (cancelled) {
@@ -159,17 +161,17 @@ export default function SubscriptionsPage() {
             } else {
               setPaymentNote({ text: "Payment failed. Please try again.", ok: false });
             }
-            setPurchasing(false);
+            setPurchasingId(null);
           },
           catchException: () => {
             setPaymentNote({ text: "Something went wrong with the payment. Please try again.", ok: false });
-            setPurchasing(false);
+            setPurchasingId(null);
           },
         },
       );
     } catch {
       setError("Could not start payment. Please try again.");
-      setPurchasing(false);
+      setPurchasingId(null);
     }
   }
 
@@ -196,7 +198,7 @@ export default function SubscriptionsPage() {
       ) : plans.length ? (
         <div className="subscription-plan-grid">
           {plans.map((plan, index) => (
-            <PlanCard featured={index === 0} key={plan.id || plan.name || index} onPurchase={handlePurchase} plan={plan} purchasing={purchasing}/>
+            <PlanCard featured={index === 0} key={plan.id || plan.name || index} onPurchase={handlePurchase} plan={plan} purchasing={purchasingId === plan.id}/>
           ))}
         </div>
       ) : (

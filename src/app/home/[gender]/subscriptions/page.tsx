@@ -128,13 +128,14 @@ export default function SubscriptionsPage() {
         return;
       }
 
-      // Step 2: load bolt.js (idempotent — skipped if already on window)
+      // Step 2: pre-fetch hash from BE — bolt.js UAT requires a static string, not a callback
+      const { hash } = await fetchPayuHash(order.orderId, "payment_hash");
+
+      // Step 3: load bolt.js (idempotent — skipped if already on window)
       await loadBoltScript(!!order.isProduction);
       if (!window.bolt) throw new Error("bolt undefined after load");
 
-      // Step 3: open checkout modal.
-      // hash must be a callback — bolt.js calls it with hashName when it needs a hash;
-      // we forward to BE which signs it server-side (salt never touches the browser).
+      // Step 4: open checkout modal
       window.bolt.launch(
         {
           key: order.keyId,
@@ -150,25 +151,13 @@ export default function SubscriptionsPage() {
           udf2: order.entityId || "",
           surl: order.surl,
           furl: order.furl,
-          // bolt.js calls this with hashName (string or {hashName}) when it needs a hash
-          hash: (params: unknown, callback: (h: string) => void) => {
-            const name = (params && typeof params === "object" && "hashName" in (params as object))
-              ? (params as { hashName: string }).hashName
-              : typeof params === "string" ? params : "payment_hash";
-            fetchPayuHash(order.orderId!, name || "payment_hash")
-              .then(({ hash: h }) => callback(h))
-              .catch((err) => {
-                console.error("PayU hash fetch failed:", err);
-                setError("Payment setup failed. Please try again.");
-                setPurchasingId(null);
-              });
-          },
+          hash,
         },
         {
           responseHandler: (b) => {
             const ok = b.response.txnStatus?.toUpperCase() === "SUCCESS";
             const cancelled = b.response.txnStatus?.toUpperCase() === "CANCEL";
-            // Step 4: inform BE of outcome — credits are granted by webhook, not this call
+            // Step 5: inform BE of outcome — credits are granted by webhook, not this call
             verifyPaymentFromUI(order.orderId!, ok ? "completed" : "failed").catch(() => null);
             if (ok) {
               setPaymentNote({ text: "Payment successful! Your credits will be added shortly.", ok: true });

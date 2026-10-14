@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ActiveRequest, cancelRequest, fetchBlockedUsers, fetchPlaceDetails, fetchRequestDetails, fetchUserDetails, PlaceDetails, respondToRequest, toggleBlockUser, UserProfile, verifyMeetupEntryCode } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
 const reportReasons = ["Fake profile", "Harassment", "Spam", "Inappropriate content", "Impersonation", "Other"];
 
@@ -79,7 +80,6 @@ export default function RequestDetailsPage() {
 
   const counterpart = request ? getCounterpart(request, role) : undefined;
   const displayName = counterpartProfile?.name || counterpart?.username || counterpart?.name || "Entry partner";
-  const profileImage = counterpartProfile?.profilePicUrl || counterpart?.profilePicUrl;
 
   const toggleBlock = async () => {
     if (!counterpart?.id) return;
@@ -178,7 +178,7 @@ export default function RequestDetailsPage() {
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
                 <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="Tap to enlarge profile picture">
-                  {profileImage ? <img src={profileImage} alt={`${displayName} profile`} /> : <div className="request-card-user-placeholder">{getInitials(displayName)}</div>}
+                  <Avatar userId={counterpart?.id} fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
                   <span className="request-profile-image-overlay">Tap to enlarge</span>
                 </button>
               </div>
@@ -282,7 +282,7 @@ export default function RequestDetailsPage() {
       {showProfileImage && (
         <div className="request-profile-image-modal" role="dialog" aria-modal="true" aria-label={`${displayName} profile picture`} onClick={() => setShowProfileImage(false)}>
           <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
-          {profileImage ? <img src={profileImage} alt={`${displayName} profile`} /> : <div className="request-profile-image-modal-placeholder">{getInitials(displayName)}</div>}
+          <Avatar userId={counterpart?.id} size={320} style={{ borderRadius: 0 }} fallback={<div className="request-profile-image-modal-placeholder">{getInitials(displayName)}</div>} />
         </div>
       )}
       {cancellationConfirmed && (

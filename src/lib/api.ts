@@ -1,7 +1,7 @@
 import { getApiBaseUrl } from "@/lib/config";
 
-const API_BASE_URL = getApiBaseUrl();
-const PROFILE_UPLOAD_API_BASE_URL = API_BASE_URL;
+// Exported so client components (Avatar) can build the profile-pic redirect URL.
+export const API_BASE_URL = getApiBaseUrl();
 
 type ApiError = Error & { status?: number; data?: unknown };
 
@@ -68,6 +68,7 @@ export function createUser(payload: {
   gender: string;
   dateOfBirth: string;
   chargeAmount: number;
+  profilePicId?: string;
 }) {
   return request<OtpValidationResponse>("users", {
     method: "POST",
@@ -90,10 +91,6 @@ export function updateUserDetails(userId: string, payload: { name: string; email
   return request<UserProfile>(`users/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
-export function updateUserDetailsForProfileUpload(userId: string, payload: { name: string; email: string; gender?: string; phone?: string; dateOfBirth: string; profilePicId?: string }) {
-  return requestWithBase<UserProfile>(PROFILE_UPLOAD_API_BASE_URL, `users/${encodeURIComponent(userId)}`, { method: "PUT", body: JSON.stringify(payload) });
-}
-
 export function toggleUserAvailability() {
   return request<{ message?: string }>("users/toggle-available", { method: "PATCH", body: JSON.stringify({}) });
 }
@@ -106,27 +103,50 @@ export function confirmAccountDeletion(otp: string) {
   return request<{ message?: string }>("validate_otp_delete", { method: "POST", body: JSON.stringify({ otp }) });
 }
 
-export function getProfilePicUploadUrl(userId: string, fileContentType: string) {
-  return requestWithBase<{ uploadUrl?: string; url?: string; presignedUrl?: string; fileId?: string }>(PROFILE_UPLOAD_API_BASE_URL, `file/upload-url?fileType=profile_pic&fileContentType=${encodeURIComponent(fileContentType)}&userId=${encodeURIComponent(userId)}`, { method: "GET" });
+type ProfilePicUploadUrlResponse = { fileId: string; uploadUrl: string; expiresInSeconds?: number; expiresAt?: string; requiredHeaders?: Record<string, string> };
+type FileStatusResponse = { fileId: string; status: "PENDING" | "READY" | "FAILED"; downloadUrl?: string };
+
+// Identity for /file/upload-url and /file/{id}/status comes purely from whichever JWT is
+// attached (temp JWT pre-signup, or access JWT once logged in) — no userId param.
+export function getProfilePicUploadUrl(fileContentType: string) {
+  return request<ProfilePicUploadUrlResponse>(`file/upload-url?fileType=profile_pic&fileContentType=${encodeURIComponent(fileContentType)}`, { method: "GET" });
 }
 
-export async function uploadProfilePicture(file: File, userId: string) {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("userId", userId);
-  const accessToken = typeof window !== "undefined" ? window.localStorage.getItem("stag_access_token") : null;
-  const response = await fetch("/api/profile-picture-upload", {
-    method: "POST",
-    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
-    body: formData,
+export function getProfilePicUploadStatus(fileId: string) {
+  return request<FileStatusResponse>(`file/${encodeURIComponent(fileId)}/status`, { method: "GET" });
+}
+
+const PROFILE_PIC_STATUS_POLL_INTERVAL_MS = 1500;
+const PROFILE_PIC_STATUS_POLL_TIMEOUT_MS = 20000;
+
+// Uploads straight to Kosh from the browser (no server-side proxy — a prior implementation
+// double-hopped through a Next.js API route that silently dropped the caller's Authorization
+// header on the way to the backend), then confirms processing status.
+export async function uploadProfilePictureToKosh(file: File): Promise<{ fileId: string; status: "ready" | "pending" | "failed" }> {
+  const { uploadUrl, fileId, requiredHeaders } = await getProfilePicUploadUrl(file.type || "image/jpeg");
+  if (!uploadUrl || !fileId) throw new Error("Unable to get upload URL");
+
+  const uploadResponse = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": file.type || "image/jpeg", ...(requiredHeaders || {}) },
+    body: file,
   });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.message || payload.error || "Profile picture upload failed.");
-  return payload as { fileId: string };
+  if (!uploadResponse.ok) throw new Error("Failed to upload image to storage");
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < PROFILE_PIC_STATUS_POLL_TIMEOUT_MS) {
+    const { status } = await getProfilePicUploadStatus(fileId);
+    if (status === "READY") return { fileId, status: "ready" };
+    if (status === "FAILED") return { fileId, status: "failed" };
+    await new Promise((resolve) => setTimeout(resolve, PROFILE_PIC_STATUS_POLL_INTERVAL_MS));
+  }
+  // Still PENDING after our short poll window — caller may proceed anyway per contract;
+  // profilePicFileId lands on the user record later via the backend's webhook.
+  return { fileId, status: "pending" };
 }
 
-export function deleteFile(fileId: string) {
-  return request<{ message?: string }>(`file/${encodeURIComponent(fileId)}`, { method: "DELETE" });
+export function deleteProfilePicture() {
+  return request<{ message?: string }>("file/profile-picture", { method: "DELETE" });
 }
 
 export type UserProfile = {
@@ -137,10 +157,9 @@ export type UserProfile = {
   gender?: string;
   dateOfBirth?: string;
   status?: string;
-  profilePicUrl?: string;
-  profilePicId?: string;
-  profilePic?: string;
-  profilePicture?: string;
+  // Presence marker only — never a URL. Display always loads live via
+  // GET /users/{id}/profile-pic-url (see components/Avatar.tsx).
+  profilePicFileId?: string;
   entryCount?: number;
   selfieVerified?: boolean;
   chargeAmount?: number;
@@ -242,7 +261,7 @@ export type RequestUser = {
   id?: string;
   username?: string;
   name?: string;
-  profilePicUrl?: string;
+  profilePicFileId?: string;
   phone?: string;
   entryCount?: number;
   otp?: string;
@@ -251,7 +270,7 @@ export type RequestUser = {
 export type CompanionUser = {
   id?: string;
   name?: string;
-  profilePicUrl?: string;
+  profilePicFileId?: string;
   distance?: number;
   selfieVerified?: boolean;
   isPlannedVisit?: boolean;
@@ -331,7 +350,7 @@ export type RewardsResponse = {
   levelRewards?: RewardLevel[];
   merchandise?: Merchandise[];
   leaderboardRank?: number;
-  leaderboard?: Array<{ rank?: number; userId?: string; name?: string; profilePicUrl?: string; points?: number }>;
+  leaderboard?: Array<{ rank?: number; userId?: string; name?: string; points?: number }>;
   history?: RewardHistoryEntry[];
   referralCode?: string;
 };

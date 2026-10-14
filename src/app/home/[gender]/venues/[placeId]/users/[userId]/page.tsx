@@ -12,6 +12,7 @@ import {
   toggleBlockUser,
   UserProfile,
 } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
 const reportReasons = ["Fake profile", "Harassment", "Spam", "Inappropriate content", "Impersonation", "Other"];
 const blockReasons = ["I do not want to interact with this user", "Unwanted requests or messages", "Safety concern", "Other"];
@@ -132,8 +133,12 @@ export default function UserProfilePage() {
       ) : profile ? (
         <>
           <div className="user-profile-header">
-            <button className="user-profile-avatar-button" type="button" onClick={() => profile.profilePicUrl && setShowProfileImage(true)} aria-label="View profile picture">
-              {profile.profilePicUrl ? <img className="user-profile-avatar" src={profile.profilePicUrl} alt="" /> : <div className="user-profile-avatar user-profile-avatar-placeholder">{getInitials(profile.name)}</div>}
+            <button className="user-profile-avatar-button" type="button" onClick={() => profile.profilePicFileId && setShowProfileImage(true)} aria-label="View profile picture">
+              <Avatar
+                userId={userId}
+                className="user-profile-avatar"
+                fallback={<div className="user-profile-avatar user-profile-avatar-placeholder">{getInitials(profile.name)}</div>}
+              />
             </button>
             <div>
               <p className="eyebrow">MEMBER PROFILE</p>
@@ -196,10 +201,10 @@ export default function UserProfilePage() {
       ) : (
         <div className="empty-panel"><strong>User details unavailable.</strong><span>{error || "Please return to the entry partners list."}</span></div>
       )}
-      {showProfileImage && profile?.profilePicUrl && (
+      {showProfileImage && profile?.profilePicFileId && (
         <div className="profile-image-modal" role="dialog" aria-modal="true" aria-label="Profile picture" onClick={() => setShowProfileImage(false)}>
           <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
-          <img src={profile.profilePicUrl} alt={`${profile.name || "User"} profile`} />
+          <Avatar userId={userId} size={320} style={{ borderRadius: 0, width: "100%", height: "auto" }} />
         </div>
       )}
       {showTerms && (

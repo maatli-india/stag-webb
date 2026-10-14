@@ -1,9 +1,10 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useState } from "react";
-import { createUser, decodeJwtRole, generateOtp, updateUserDetailsForProfileUpload, uploadProfilePicture, validateOtp } from "@/lib/api";
+import { createUser, decodeJwtRole, generateOtp, uploadProfilePictureToKosh, validateOtp } from "@/lib/api";
 
 type SignupStep = "phone" | "otp" | "details";
+type UploadStatus = "idle" | "uploading" | "ready" | "pending" | "failed";
 
 export default function SignupPage() {
   const [step, setStep] = useState<SignupStep>("phone");
@@ -13,8 +14,9 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [gender, setGender] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isBusy, setIsBusy] = useState(false);
@@ -65,6 +67,12 @@ export default function SignupPage() {
         );
         return;
       }
+      // Temp JWT for a brand-new user — persist it now (same slot the real access token
+      // will later overwrite) so a profile-photo upload can happen before the account
+      // exists, per the upload contract's Flow A.
+      if (response.token?.accessToken) {
+        window.localStorage.setItem("stag_access_token", response.token.accessToken);
+      }
       setStep("details");
       setMessage("Phone number verified. Complete your profile to continue.");
     } catch (requestError) {
@@ -112,6 +120,14 @@ export default function SignupPage() {
       setError("You must be at least 18 years old to register.");
       return;
     }
+    if (uploadStatus === "uploading") {
+      setError("Please wait for your photo to finish uploading.");
+      return;
+    }
+    if (uploadStatus === "failed") {
+      setError("Your photo could not be uploaded. Please remove it or try a different photo before continuing.");
+      return;
+    }
     setError("");
     setMessage("");
     setIsBusy(true);
@@ -123,13 +139,9 @@ export default function SignupPage() {
         gender,
         dateOfBirth: formatDateForApi(dateOfBirth),
         chargeAmount: 0,
+        ...(uploadedFileId ? { profilePicId: uploadedFileId } : {}),
       });
       persistSession(response);
-      const userId = response.userDetails?.id;
-      if (profilePicture && userId) {
-        const uploadMeta = await uploadProfilePicture(profilePicture, userId);
-        await updateUserDetailsForProfileUpload(userId, { name: fullName.trim(), email: email.trim().toLowerCase(), gender, phone, dateOfBirth: formatDateForApi(dateOfBirth), profilePicId: uploadMeta.fileId });
-      }
       window.location.assign(
         getHomePath(response.userDetails?.gender || gender),
       );
@@ -145,7 +157,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleProfilePictureChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -159,8 +171,20 @@ export default function SignupPage() {
       return;
     }
     setError("");
-    setProfilePicture(file);
     setProfilePicturePreview(URL.createObjectURL(file));
+    setUploadStatus("uploading");
+    setUploadedFileId(null);
+    try {
+      const { fileId, status } = await uploadProfilePictureToKosh(file);
+      setUploadedFileId(fileId);
+      setUploadStatus(status);
+      if (status === "failed") {
+        setError("Your photo could not be processed. Please try a different photo.");
+      }
+    } catch {
+      setUploadStatus("failed");
+      setError("We could not upload your photo. Please try again.");
+    }
   };
 
   return (
@@ -299,8 +323,11 @@ export default function SignupPage() {
               <span className="signup-profile-photo-label">Profile picture <span className="field-hint">Optional</span></span>
               <div className="signup-profile-photo-row">
                 {profilePicturePreview ? <img className="signup-profile-avatar" src={profilePicturePreview} alt="Profile preview" /> : <div className="signup-profile-avatar signup-profile-avatar-placeholder">{getInitials(fullName)}</div>}
-                <label className="profile-photo-upload">{profilePicture ? "Change photo" : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureChange} disabled={isBusy} /></label>
+                <label className="profile-photo-upload">{profilePicturePreview ? "Change photo" : "Upload photo"}<input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleProfilePictureChange(event)} disabled={isBusy} /></label>
               </div>
+              {uploadStatus === "uploading" && <p className="field-hint">Uploading photo…</p>}
+              {uploadStatus === "pending" && <p className="field-hint">Photo is still processing — you can continue, it&apos;ll appear shortly.</p>}
+              {uploadStatus === "failed" && <p className="form-message form-error">Photo upload failed — choose a photo above to try again.</p>}
             </div>
             <button
               className="button button-primary"

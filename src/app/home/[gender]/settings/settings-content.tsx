@@ -9,6 +9,7 @@ import {
   toggleBlockUser,
   UserProfile,
 } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
 export default function SettingsContent({ gender }: { gender: string }) {
   const [isRequestingDeletion, setIsRequestingDeletion] = useState(false);
@@ -325,14 +326,11 @@ export default function SettingsContent({ gender }: { gender: string }) {
               <div className="settings-blocked-list">
                 {blockedUsers.map((user) => (
                   <div className="settings-blocked-user" key={user.id}>
-                    <span
+                    <Avatar
+                      userId={user.id}
                       className="settings-blocked-avatar"
-                      style={getProfileImageStyle(user)}
-                    >
-                      {getProfileImage(user)
-                        ? ""
-                        : getInitials(user.name || "STAG")}
-                    </span>
+                      fallback={<span className="settings-blocked-avatar">{getInitials(user.name || "STAG")}</span>}
+                    />
                     <strong>{user.name || "STAG user"}</strong>
                     <button
                       className="button button-secondary settings-unblock-button"
@@ -452,15 +450,6 @@ export default function SettingsContent({ gender }: { gender: string }) {
       )}
     </>
   );
-}
-
-function getProfileImage(user: UserProfile) {
-  return user.profilePicUrl || user.profilePic || user.profilePicture || "";
-}
-
-function getProfileImageStyle(user: UserProfile) {
-  const image = getProfileImage(user);
-  return image ? { backgroundImage: `url(${image})` } : undefined;
 }
 
 function getInitials(name: string) {

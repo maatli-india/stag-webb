@@ -155,7 +155,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
     };
 
     void checkRequests();
-    const interval = window.setInterval(() => void checkRequests(), 10000);
+    const interval = window.setInterval(() => void checkRequests(), 25000);
     return () => window.clearInterval(interval);
   }, [gender, router]);
 

@@ -542,6 +542,47 @@ export function deleteEvent(eventId: string) {
   return request<{ message?: string }>(`event/${encodeURIComponent(eventId)}`, { method: "DELETE" });
 }
 
+// ── Payments ─────────────────────────────────────────────────────────────
+
+export type PaymentOrder = {
+  amount?: number;
+  currency?: string;
+  entityId?: string;
+  entityType?: string;
+  furl?: string;
+  gateway?: string;
+  isProduction?: boolean;
+  keyId?: string;
+  orderId?: string;
+  payuTxnId?: string;
+  productInfo?: string;
+  surl?: string;
+};
+
+// Creates a gateway order. For subscriptions, amount/currency are ignored — BE uses plan breakdown.
+export function createPaymentOrder(entityType: "subscription" | "request", entityDetails: Record<string, string>) {
+  return request<PaymentOrder>("payment/create-order", {
+    method: "POST",
+    body: JSON.stringify({ entityType, entityDetails }),
+  });
+}
+
+// Fetches a server-signed PayU hash. The hash is never computed on the client — salt stays on BE only.
+export function fetchPayuHash(orderId: string, name: string) {
+  return request<{ hash: string; hashName: string }>("payment/hashes", {
+    method: "POST",
+    body: JSON.stringify({ orderId, name }),
+  });
+}
+
+// Notifies BE of the client-side payment outcome. Credits are granted by webhook, not this call.
+export function verifyPaymentFromUI(orderId: string, status: "completed" | "failed" | "pending") {
+  return request<string>("payment/verify", {
+    method: "POST",
+    body: JSON.stringify({ orderId, status }),
+  });
+}
+
 // ── Admin: subscription plans ────────────────────────────────────────────
 
 export type SubscriptionPlan = {

@@ -1,10 +1,77 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useRef, useState } from "react";
 import { createUser, decodeJwtRole, generateOtp, uploadProfilePictureToKosh, validateOtp } from "@/lib/api";
 
 type SignupStep = "phone" | "otp" | "details";
 type UploadStatus = "idle" | "uploading" | "ready" | "pending" | "failed";
+
+// Six individual digit boxes for OTP entry — auto-advances on input, backs up on delete.
+function OtpBoxes({ value, onChange, disabled, autoFocus }: { value: string; onChange: (v: string) => void; disabled: boolean; autoFocus?: boolean }) {
+  const r0 = useRef<HTMLInputElement>(null);
+  const r1 = useRef<HTMLInputElement>(null);
+  const r2 = useRef<HTMLInputElement>(null);
+  const r3 = useRef<HTMLInputElement>(null);
+  const r4 = useRef<HTMLInputElement>(null);
+  const r5 = useRef<HTMLInputElement>(null);
+  const refs = [r0, r1, r2, r3, r4, r5];
+
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] || "");
+
+  const focus = (i: number) => refs[i]?.current?.focus();
+
+  const handleChange = (i: number, e: ChangeEvent<HTMLInputElement>) => {
+    const digit = e.target.value.replace(/\D/g, "").slice(-1);
+    const next = digits.map((d, idx) => (idx === i ? digit : d)).join("");
+    onChange(next.replace(/\s/g, "").slice(0, 6));
+    if (digit && i < 5) focus(i + 1);
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace") {
+      if (!digits[i] && i > 0) {
+        const next = digits.map((d, idx) => (idx === i - 1 ? "" : d)).join("").trimEnd();
+        onChange(next);
+        focus(i - 1);
+        e.preventDefault();
+      }
+    } else if (e.key === "ArrowLeft" && i > 0) {
+      focus(i - 1);
+    } else if (e.key === "ArrowRight" && i < 5) {
+      focus(i + 1);
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    onChange(text);
+    focus(Math.min(text.length, 5));
+    e.preventDefault();
+  };
+
+  return (
+    <div className="otp-boxes" role="group" aria-label="One-time password" onPaste={handlePaste}>
+      {digits.map((digit, i) => (
+        <input
+          key={i}
+          ref={refs[i]}
+          id={`otp-box-${i}`}
+          className="otp-box"
+          type="text"
+          inputMode="numeric"
+          autoComplete={i === 0 ? "one-time-code" : "off"}
+          maxLength={1}
+          value={digit}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          disabled={disabled}
+          autoFocus={autoFocus && i === 0}
+          aria-label={`Digit ${i + 1} of 6`}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function SignupPage() {
   const [step, setStep] = useState<SignupStep>("phone");
@@ -37,12 +104,7 @@ export default function SignupPage() {
       setStep("otp");
       setMessage(`We sent a 6-digit OTP to +91 ${phone}.`);
     } catch (requestError) {
-      setError(
-        getErrorMessage(
-          requestError,
-          "We could not send the OTP. Please try again.",
-        ),
-      );
+      setError(getErrorMessage(requestError, "We could not send the OTP. Please try again."));
     } finally {
       setIsBusy(false);
     }
@@ -62,26 +124,18 @@ export default function SignupPage() {
       if (response.isNewUser === false) {
         persistSession(response);
         const role = decodeJwtRole(response.token?.accessToken || null);
-        window.location.assign(
-          role === "admin" ? "/admin" : getHomePath(response.userDetails?.gender),
-        );
+        window.location.assign(role === "admin" ? "/admin" : "/home");
         return;
       }
-      // Temp JWT for a brand-new user — persist it now (same slot the real access token
-      // will later overwrite) so a profile-photo upload can happen before the account
-      // exists, per the upload contract's Flow A.
+      // Temp JWT for a brand-new user — persist it so profile-photo upload can happen
+      // before the account exists, per the upload contract's Flow A.
       if (response.token?.accessToken) {
         window.localStorage.setItem("stag_access_token", response.token.accessToken);
       }
       setStep("details");
       setMessage("Phone number verified. Complete your profile to continue.");
     } catch (requestError) {
-      setError(
-        getErrorMessage(
-          requestError,
-          "That OTP could not be verified. Check it and try again.",
-        ),
-      );
+      setError(getErrorMessage(requestError, "That OTP could not be verified. Check it and try again."));
     } finally {
       setIsBusy(false);
     }
@@ -96,12 +150,7 @@ export default function SignupPage() {
       await generateOtp(phone);
       setMessage(`A new OTP was sent to +91 ${phone}.`);
     } catch (requestError) {
-      setError(
-        getErrorMessage(
-          requestError,
-          "We could not resend the OTP. Please try again.",
-        ),
-      );
+      setError(getErrorMessage(requestError, "We could not resend the OTP. Please try again."));
     } finally {
       setIsBusy(false);
     }
@@ -142,16 +191,9 @@ export default function SignupPage() {
         ...(uploadedFileId ? { profilePicId: uploadedFileId } : {}),
       });
       persistSession(response);
-      window.location.assign(
-        getHomePath(response.userDetails?.gender || gender),
-      );
+      window.location.assign("/home");
     } catch (requestError) {
-      setError(
-        getErrorMessage(
-          requestError,
-          "We could not create your account. Please try again.",
-        ),
-      );
+      setError(getErrorMessage(requestError, "We could not create your account. Please try again."));
     } finally {
       setIsBusy(false);
     }
@@ -190,12 +232,15 @@ export default function SignupPage() {
   return (
     <section className="auth-page content-width">
       <div className="auth-card">
-        <p className="eyebrow">START WITH STAG</p>
-        <h1>Create your account.</h1>
-        <p>
-          Verify your phone first, then complete the details needed to arrange
-          club entry assistance.
-        </p>
+        <p className="eyebrow">STAG</p>
+        {step === "phone" && (
+          <>
+            <h1>Get started.</h1>
+            <p>Enter your mobile number to sign in or create a new STAG account. We&apos;ll send you a one-time code to verify.</p>
+          </>
+        )}
+        {step === "otp" && <h1>Check your phone.</h1>}
+        {step === "details" && <h1>Create your account.</h1>}
         {step === "phone" && (
           <form onSubmit={handleSendOtp}>
             <label>
@@ -209,68 +254,35 @@ export default function SignupPage() {
                   placeholder="10-digit mobile number"
                   value={phone}
                   maxLength={10}
-                  onChange={(event) =>
-                    setPhone(event.target.value.replace(/\D/g, ""))
-                  }
+                  onChange={(event) => setPhone(event.target.value.replace(/\D/g, ""))}
                 />
               </div>
             </label>
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={!validPhone || isBusy}
-            >
-              {isBusy ? "Sending OTP..." : "Verify phone number"}
+            <button className="button button-primary" type="submit" disabled={!validPhone || isBusy}>
+              {isBusy ? "Sending OTP..." : "Continue"}
             </button>
+            {error && <p className="form-message form-error" role="alert">{error}</p>}
           </form>
         )}
         {step === "otp" && (
           <form onSubmit={handleVerifyOtp}>
-            <label>
+            <label htmlFor="otp-box-0">
               Enter OTP
-              <span className="field-hint">
-                6-digit code sent to +91 {phone}
-              </span>
-              <input
-                autoFocus
-                type="text"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={otp}
-                maxLength={6}
-                onChange={(event) =>
-                  setOtp(event.target.value.replace(/\D/g, ""))
-                }
-              />
+              <span className="field-hint">6-digit code sent to +91 {phone}</span>
             </label>
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={otp.length !== 6 || isBusy}
-            >
+            <OtpBoxes value={otp} onChange={setOtp} disabled={isBusy} autoFocus />
+            {error && <p className="form-message form-error otp-inline-error" role="alert">{error}</p>}
+            {message && <p className="form-message form-success" role="status">{message}</p>}
+            <button className="button button-primary" type="submit" disabled={otp.length !== 6 || isBusy}>
               {isBusy ? "Verifying..." : "Verify OTP"}
             </button>
             <p className="otp-resend">
               Didn&apos;t get the OTP?{" "}
-              <button
-                className="text-link otp-resend-link"
-                type="button"
-                onClick={handleResendOtp}
-                disabled={isBusy}
-              >
+              <button className="text-link otp-resend-link" type="button" onClick={handleResendOtp} disabled={isBusy}>
                 Resend OTP
               </button>
             </p>
-            <button
-              className="button button-quiet auth-secondary"
-              type="button"
-              onClick={() => {
-                setStep("phone");
-                setOtp("");
-                setMessage("");
-                setError("");
-              }}
-            >
+            <button className="button button-quiet auth-secondary" type="button" onClick={() => { setStep("phone"); setOtp(""); setMessage(""); setError(""); }}>
               Use a different number
             </button>
           </form>
@@ -279,40 +291,19 @@ export default function SignupPage() {
           <form onSubmit={handleCreateAccount}>
             <label>
               Full name
-              <input
-                required
-                type="text"
-                placeholder="Your full name"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-              />
+              <input required type="text" placeholder="Your full name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
             </label>
             <label>
               Email address
-              <input
-                required
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
+              <input required type="email" placeholder="you@example.com" value={email} onChange={(event) => setEmail(event.target.value)} />
             </label>
             <label>
               Date of birth
-              <input
-                required
-                type="date"
-                value={dateOfBirth}
-                onChange={(event) => setDateOfBirth(event.target.value)}
-              />
+              <input required type="date" value={dateOfBirth} onChange={(event) => setDateOfBirth(event.target.value)} />
             </label>
             <label>
               Gender
-              <select
-                required
-                value={gender}
-                onChange={(event) => setGender(event.target.value)}
-              >
+              <select required value={gender} onChange={(event) => setGender(event.target.value)}>
                 <option value="">Select gender</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -329,24 +320,12 @@ export default function SignupPage() {
               {uploadStatus === "pending" && <p className="field-hint">Photo is still processing — you can continue, it&apos;ll appear shortly.</p>}
               {uploadStatus === "failed" && <p className="form-message form-error">Photo upload failed — choose a photo above to try again.</p>}
             </div>
-            <button
-              className="button button-primary"
-              type="submit"
-              disabled={isBusy}
-            >
+            <button className="button button-primary" type="submit" disabled={isBusy}>
               {isBusy ? "Creating account..." : "Create account"}
             </button>
+            {error && <p className="form-message form-error" role="alert">{error}</p>}
+            {message && <p className="form-message form-success" role="status">{message}</p>}
           </form>
-        )}
-        {error && (
-          <p className="form-message form-error" role="alert">
-            {error}
-          </p>
-        )}
-        {message && (
-          <p className="form-message form-success" role="status">
-            {message}
-          </p>
         )}
       </div>
     </section>
@@ -359,24 +338,15 @@ function getInitials(name: string) {
 
 function persistSession(response: {
   token?: { accessToken?: string; refreshToken?: string };
-  userDetails?: { id?: string; _id?: string };
+  userDetails?: { id?: string; _id?: string; gender?: string };
 }) {
-  if (response.token?.accessToken)
-    window.localStorage.setItem(
-      "stag_access_token",
-      response.token.accessToken,
-    );
-  if (response.token?.refreshToken)
-    window.localStorage.setItem(
-      "stag_refresh_token",
-      response.token.refreshToken,
-    );
+  if (response.token?.accessToken) window.localStorage.setItem("stag_access_token", response.token.accessToken);
+  if (response.token?.refreshToken) window.localStorage.setItem("stag_refresh_token", response.token.refreshToken);
   const userId = response.userDetails?.id || response.userDetails?._id;
   if (userId) window.localStorage.setItem("stag_user_id", userId);
-}
-
-function getHomePath(gender?: string) {
-  return gender?.toLowerCase() === "female" ? "/home/female" : "/home/male";
+  // Gender stored for client-side routing and content switching (no gender in URL).
+  const gender = response.userDetails?.gender?.toLowerCase();
+  if (gender === "female" || gender === "male") window.localStorage.setItem("stag_gender", gender);
 }
 
 function formatDateForApi(value: string) {

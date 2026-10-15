@@ -27,6 +27,7 @@ export function SiteHeader() {
         <Link href="/privacy">Privacy</Link>
       </nav>
       <div className="header-actions">
+        <Link className="button button-quiet" href="/signup">Log in</Link>
         <Link className="button button-primary" href="/signup">Create account</Link>
       </div>
     </header>
@@ -75,7 +76,7 @@ export function SiteFooter() {
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isAuthenticatedRoute = pathname.startsWith("/home/");
+  const isAuthenticatedRoute = pathname === "/home" || pathname.startsWith("/home/");
   const isEmbeddedLegal = ["/terms", "/privacy", "/child-safety"].includes(pathname) && searchParams.get("embedded") === "1";
   if (isEmbeddedLegal) return <main className="embedded-terms">{children}</main>;
   return isAuthenticatedRoute ? <AuthShell>{children}</AuthShell> : <><SiteHeader /><main>{children}</main><SiteFooter /></>;

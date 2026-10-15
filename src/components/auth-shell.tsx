@@ -18,7 +18,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const profileMenuRef = useRef<HTMLDetailsElement>(null);
   const requestSnapshotRef = useRef<Record<string, string>>({});
   const notificationAudioContextRef = useRef<AudioContext | null>(null);
-  const gender = pathname.split("/")[2] === "female" ? "female" : "male";
+  const [gender, setGender] = useState<"female" | "male">("male");
   const [profile, setProfile] = useState<{ name?: string }>({});
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -28,14 +28,19 @@ export function AuthShell({ children }: { children: ReactNode }) {
   } | null>(null);
   const [hasUnreadRequestUpdate, setHasUnreadRequestUpdate] = useState(false);
   const appLinks = [
-    ["Home", `/home/${gender}`],
-    ["My Requests", `/home/${gender}/requests`],
-    ["Visit Plans", `/home/${gender}/plans`],
-    ["Rewards", `/home/${gender}/rewards`],
-    ["Settings", `/home/${gender}/settings`],
-    ["About App", `/home/${gender}/about`],
-    ["Support", `/home/${gender}/support`],
+    ["Home", "/home"],
+    ["My Requests", "/home/requests"],
+    ["Visit Plans", "/home/plans"],
+    ["Rewards", "/home/rewards"],
+    ["Settings", "/home/settings"],
+    ["About App", "/home/about"],
+    ["Support", "/home/support"],
   ];
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("stag_gender");
+    setGender(stored === "female" ? "female" : "male");
+  }, []);
 
   useEffect(() => {
     const userId = window.localStorage.getItem("stag_user_id");
@@ -51,6 +56,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
     if ("serviceWorker" in navigator)
       void navigator.serviceWorker.register("/sw.js").catch(() => {});
     if (window.Notification.permission === "default") {
+      if (window.Notification.permission === "granted")
+        return;
       void window.Notification.requestPermission().catch(() => {});
     }
   }, []);
@@ -112,11 +119,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
         body: message,
         tag: `stag-request-${request.id}`,
       });
-      notification.onclick = () => {
-        window.focus();
-        router.push(
-          `/home/${gender}/requests/${encodeURIComponent(request.id || "")}`,
-        );
+        notification.onclick = () => {
+          window.focus();
+          router.push(
+            `/home/requests/${encodeURIComponent(request.id || "")}`,
+          );
         notification.close();
       };
     };
@@ -190,7 +197,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <Link className="brand" href={`/home/${gender}`} aria-label="STAG home">
+        <Link className="brand" href="/home" aria-label="STAG home">
           <Image
             src="/assets/images/stag-logo.png"
             alt="STAG"
@@ -233,9 +240,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
           </summary>
           <div className="profile-dropdown">
             <strong>{profile.name || "Your STAG profile"}</strong>
-            <Link href={`/home/${gender}/profile`}>Edit Profile</Link>
-            <Link href={`/home/${gender}/credits`}>Request Credits</Link>
-            <Link href={`/home/${gender}/subscriptions`}>Subscription Plans</Link>
+            <Link href="/home/profile">Edit Profile</Link>
+            <Link href="/home/credits">Request Credits</Link>
+            <Link href="/home/subscriptions">Subscription Plans</Link>
             <button
               className="profile-dropdown-logout"
               type="button"
@@ -250,7 +257,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="request-alert" role="status">
           <span>{requestAlert.message}</span>
           <Link
-            href={`/home/${gender}/requests/${encodeURIComponent(requestAlert.requestId)}`}
+            href={`/home/requests/${encodeURIComponent(requestAlert.requestId)}`}
             onClick={() => {
               setRequestAlert(null);
               setHasUnreadRequestUpdate(false);

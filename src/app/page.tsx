@@ -16,7 +16,7 @@ export default function Home() {
           <p className="eyebrow">CLUB ENTRY, HANDLED WITH CLARITY</p>
           <h1>Get through the door with a plan.</h1>
           <p className="lede">STAG helps adults discover events, make plans, and connect with people who want to attend together.</p>
-          <div className="hero-actions"><a className="button button-primary button-large" href="/signup">Create your account <span>↗</span></a><a className="text-link" href="#how-it-works">See how it works <span>↓</span></a></div>
+          <div className="hero-actions"><a className="button button-primary button-large" href="/signup">Create your account <span>↗</span></a><a className="button button-quiet button-large" href="/signup">Log in <span>→</span></a><a className="text-link" href="#how-it-works">See how it works <span>↓</span></a></div>
           <div className="trust-line"><span>18+ only</span><span>Plan events together</span><span>Venue-based coordination</span></div>
         </div>
         <div className="hero-art"><Image src="/assets/images/clubImg/club-02.png" alt="Club interior" fill priority sizes="(max-width: 850px) 100vw, 50vw" /><div className="hero-stamp"><strong>STAG</strong><span>ARRIVE WITH<br />CONFIDENCE</span></div></div>

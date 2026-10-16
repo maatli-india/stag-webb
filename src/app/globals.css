@@ -54,11 +54,12 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 .profile-edit-heading { display:flex; align-items:end; justify-content:space-between; gap:30px; border-bottom:1px solid var(--line); padding:30px 0 20px; }
 .profile-edit-heading h1 { margin-top:8px; }
 .profile-edit-heading .lede { max-width:600px; margin-bottom:0; }
-.profile-edit-avatar { width:240px; height:240px; display:grid; place-items:center; flex:0 0 240px; border:2px solid var(--red); border-radius:50%; background:linear-gradient(145deg,#44352f,#241e1b); color:var(--ink); font:700 56px 'Space Grotesk'; }
+.profile-edit-avatar2 { width:240px; height:240px; display:grid; place-items:center; flex:0 0 240px; border:2px solid var(--red); border-radius:50%; background:linear-gradient(145deg,#44352f,#241e1b); color:var(--ink); font:700 56px 'Space Grotesk'; }
+.profile-edit-avatar { width:110px; height:110px; display:grid; place-items:center; flex:0 0 240px; border:2px solid var(--red); border-radius:50%; background:linear-gradient(145deg,#44352f,#241e1b); color:var(--ink); font:700 56px 'Space Grotesk'; }
 .profile-edit-photo-wrap { position:relative; display:flex; flex-direction:column; align-items:center; gap:0; overflow:visible; }
 .profile-edit-avatar-image { object-fit:cover; }
 .profile-edit-avatar-button { padding:0; border:0; border-radius:50%; background:transparent; cursor:zoom-in; position:relative; z-index:1; transform-origin:bottom right; transition:transform 0.32s cubic-bezier(0.34,1.3,0.64,1); }
-.profile-edit-avatar-button-expanded { transform:scale(3.6); cursor:zoom-out; z-index:16; }
+.profile-edit-avatar-button-expanded { transform:scale(2.6); cursor:zoom-out; z-index:16; }
 .profile-edit-avatar-button:focus-visible { outline:2px solid var(--lime); outline-offset:4px; }
 .profile-avatar-expand-backdrop { display:none; }
 .profile-photo-actions { display:flex; align-items:center; gap:8px; margin-top:8px; }

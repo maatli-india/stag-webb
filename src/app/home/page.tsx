@@ -289,7 +289,7 @@ export default function MemberHome() {
           {venues.map((venue, index) => (
             <Link
               className="venue-card"
-              href={`/home/venues/${encodeURIComponent(venue.place_id || venue.name || String(index))}`}
+              href={`/venues/${encodeURIComponent(venue.place_id || venue.name || String(index))}`}
               key={venue.place_id || venue.name || index}
             >
               <div className="venue-card-image">

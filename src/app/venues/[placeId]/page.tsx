@@ -31,7 +31,7 @@ export default function VenueCompanionsPage() {
     }
 
     if (role === "female") {
-      router.replace(`/home/venues/${encodeURIComponent(placeId)}/plan`);
+      router.replace(`/venues/${encodeURIComponent(placeId)}/plan`);
       return;
     }
 
@@ -47,12 +47,12 @@ export default function VenueCompanionsPage() {
         .catch(() => null),
       role === "male"
         ? fetchCompanionsNearPlace(placeId)
-            .then((users) => setCompanions(Array.isArray(users) ? users : []))
-            .catch(() =>
-              setError(
-                "We could not load entry partners for this venue right now.",
-              ),
-            )
+          .then((users) => setCompanions(Array.isArray(users) ? users : []))
+          .catch(() =>
+            setError(
+              "We could not load entry partners for this venue right now.",
+            ),
+          )
         : Promise.resolve(),
     ]).finally(() => setIsLoading(false));
   }, [placeId, role, router]);
@@ -149,7 +149,7 @@ export default function VenueCompanionsPage() {
                   ? "companion-card companion-card-planned"
                   : "companion-card"
               }
-              href={`/home/venues/${encodeURIComponent(placeId)}/users/${encodeURIComponent(companion.id || String(index))}`}
+              href={`/venues/${encodeURIComponent(placeId)}/users/${encodeURIComponent(companion.id || String(index))}`}
               key={companion.id || index}
             >
               <div className="companion-card-header">
@@ -219,11 +219,11 @@ function formatDate(value: string) {
   return Number.isNaN(date.getTime())
     ? value
     : date.toLocaleString("en-IN", {
-        day: "numeric",
-        month: "short",
-        hour: "numeric",
-        minute: "2-digit",
-      });
+      day: "numeric",
+      month: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    });
 }
 
 function formatPlaceType(value: string) {

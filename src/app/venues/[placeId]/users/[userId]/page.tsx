@@ -130,7 +130,7 @@ export default function UserProfilePage() {
 
   return (
     <section className="app-placeholder content-width user-profile-page">
-      <Link className="text-link venue-back-link" href={`/home/venues/${encodeURIComponent(placeId)}`}><span>←</span> Back to entry partners</Link>
+      <Link className="text-link venue-back-link" href={`/venues/${encodeURIComponent(placeId)}`}><span>←</span> Back to entry partners</Link>
       {isLoading ? (
         <div className="empty-panel"><span>Loading user details...</span></div>
       ) : profile ? (
@@ -230,7 +230,7 @@ export default function UserProfilePage() {
             <p className="eyebrow">REQUEST SENT</p>
             <h2 id="request-confirmation-title">Your request is on its way.</h2>
             <p className="action-modal-copy">Your entry request for {formatRequestDateTime(requestDateTime)} at {placeDetails?.name || "this venue"} has been sent. You&apos;ll be notified once it is accepted.</p>
-            <button className="button button-primary" type="button" onClick={() => router.push(`/home/venues/${encodeURIComponent(placeId)}`)}>Back to entry partners</button>
+            <button className="button button-primary" type="button" onClick={() => router.push(`/venues/${encodeURIComponent(placeId)}`)}>Back to entry partners</button>
           </section>
         </div>
       )}

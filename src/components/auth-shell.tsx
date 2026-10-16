@@ -29,12 +29,12 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const [hasUnreadRequestUpdate, setHasUnreadRequestUpdate] = useState(false);
   const appLinks = [
     ["Home", "/home"],
-    ["My Requests", "/home/requests"],
-    ["Visit Plans", "/home/plans"],
-    ["Rewards", "/home/rewards"],
-    ["Settings", "/home/settings"],
-    ["About App", "/home/about"],
-    ["Support", "/home/support"],
+    ["My Requests", "/requests"],
+    ["Visit Plans", "/plans"],
+    ["Rewards", "/rewards"],
+    ["Settings", "/settings"],
+    ["About App", "/about-page"],
+    ["Support", "/support-page"],
   ];
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         notification.onclick = () => {
           window.focus();
           router.push(
-            `/home/requests/${encodeURIComponent(request.id || "")}`,
+            `/requests/${encodeURIComponent(request.id || "")}`,
           );
         notification.close();
       };
@@ -239,9 +239,9 @@ export function AuthShell({ children }: { children: ReactNode }) {
           </summary>
           <div className="profile-dropdown">
             <strong>{profile.name || "Your STAG profile"}</strong>
-            <Link href="/home/profile">Edit Profile</Link>
-            <Link href="/home/credits">Request Credits</Link>
-            <Link href="/home/subscriptions">Subscription Plans</Link>
+            <Link href="/profile">Edit Profile</Link>
+            <Link href="/credits">Request Credits</Link>
+            <Link href="/subscriptions">Subscription Plans</Link>
             <button
               className="profile-dropdown-logout"
               type="button"
@@ -256,7 +256,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="request-alert" role="status">
           <span>{requestAlert.message}</span>
           <Link
-            href={`/home/requests/${encodeURIComponent(requestAlert.requestId)}`}
+            href={`/requests/${encodeURIComponent(requestAlert.requestId)}`}
             onClick={() => {
               setRequestAlert(null);
               setHasUnreadRequestUpdate(false);

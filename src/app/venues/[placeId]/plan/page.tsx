@@ -80,10 +80,10 @@ export default function PublishVisitPlanPage() {
       };
       if (planId) {
         await updateVisitPlan(planId, payload);
-        router.replace("/home/plans?updated=1");
+        router.replace("/plans?updated=1");
       } else {
         await publishVisitPlan(payload);
-        router.replace("/home/plans?published=1");
+        router.replace("/plans?published=1");
       }
     } catch (publishError) {
       setError(

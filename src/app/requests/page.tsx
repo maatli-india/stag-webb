@@ -80,7 +80,7 @@ export default function RequestsPage() {
       </div>
 
       <div className="request-filters" aria-label="Filter requests by status">
-            {filters.map((item) => (
+        {filters.map((item) => (
           <button
             className={filter === item.value ? "request-filter active" : "request-filter"}
             key={item.value || "all"}
@@ -89,7 +89,7 @@ export default function RequestsPage() {
               setFilter(item.value);
               setPage(1);
             }}
-            >
+          >
             {role === "female" ? item.femaleLabel : item.label}
           </button>
         ))}
@@ -111,11 +111,11 @@ export default function RequestsPage() {
                 key={request.id || index}
                 role="link"
                 tabIndex={request.id ? 0 : -1}
-                onClick={() => request.id && router.push(`/home/requests/${encodeURIComponent(request.id)}`)}
+                onClick={() => request.id && router.push(`/requests/${encodeURIComponent(request.id)}`)}
                 onKeyDown={(event) => {
                   if (request.id && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
-                    router.push(`/home/requests/${encodeURIComponent(request.id)}`);
+                    router.push(`/requests/${encodeURIComponent(request.id)}`);
                   }
                 }}
               >

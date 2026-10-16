@@ -31,7 +31,7 @@ export default function SupportPage() {
               <p>{answer}</p>
             </details>
           ))}
-          <Link className="support-policy-link" href="/home/settings/policy">Safety and request guidelines <span>›</span></Link>
+          <Link className="support-policy-link" href="/settings/policy">Safety and request guidelines <span>›</span></Link>
         </div>
         <section className="support-contact">
           <p className="request-detail-heading">NEED MORE HELP?</p>

@@ -162,7 +162,7 @@ export default function RequestDetailsPage() {
 
   return (
     <section className="app-placeholder content-width request-details-page">
-      <Link className="text-link venue-back-link" href={`/home/requests`}><span>←</span> Back to My Requests</Link>
+      <Link className="text-link venue-back-link" href={`/requests`}><span>←</span> Back to My Requests</Link>
       {isLoading ? (
         <div className="empty-panel"><span>Loading request details...</span></div>
       ) : request ? (

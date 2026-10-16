@@ -76,7 +76,8 @@ export function SiteFooter() {
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isAuthenticatedRoute = pathname === "/home" || pathname.startsWith("/home/");
+  const AUTH_PREFIXES = ["/home", "/profile", "/requests", "/plans", "/venues", "/credits", "/rewards", "/settings", "/messages", "/subscriptions", "/club-entries", "/about-page", "/support-page"];
+  const isAuthenticatedRoute = AUTH_PREFIXES.some(p => pathname === p || pathname.startsWith(p + "/"));
   const isEmbeddedLegal = ["/terms", "/privacy", "/child-safety"].includes(pathname) && searchParams.get("embedded") === "1";
   if (isEmbeddedLegal) return <main className="embedded-terms">{children}</main>;
   return isAuthenticatedRoute ? <AuthShell>{children}</AuthShell> : <><SiteHeader /><main>{children}</main><SiteFooter /></>;

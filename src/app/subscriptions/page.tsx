@@ -183,7 +183,7 @@ export default function SubscriptionsPage() {
 
   return (
     <section className="app-placeholder content-width subscriptions-page">
-      <Link className="text-link venue-back-link" href={`/home/credits`}>
+      <Link className="text-link venue-back-link" href={`/credits`}>
         <span>←</span> Back to request credits
       </Link>
       <header className="app-option-heading">

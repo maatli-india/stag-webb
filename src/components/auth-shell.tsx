@@ -55,9 +55,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
     if (typeof window.Notification === "undefined") return;
     if ("serviceWorker" in navigator)
       void navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if (window.Notification.permission === "granted") return;
     if (window.Notification.permission === "default") {
-      if (window.Notification.permission === "granted")
-        return;
       void window.Notification.requestPermission().catch(() => {});
     }
   }, []);

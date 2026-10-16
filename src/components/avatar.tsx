@@ -14,6 +14,7 @@ export default function Avatar({
   style,
   fallback,
   noStyle,
+  cacheBust,
 }: {
   userId?: string | null;
   size?: number;
@@ -22,6 +23,8 @@ export default function Avatar({
   fallback?: React.ReactNode;
   // When true, skips inline dimension/shape styles — use when the className fully controls sizing.
   noStyle?: boolean;
+  // Append as ?v=cacheBust to bust browser cache after upload/remove.
+  cacheBust?: string | number;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -48,7 +51,7 @@ export default function Avatar({
   return (
     // eslint-disable-next-line @next/next/no-img-element -- external, auth-free, per-viewer redirect; next/image's domain allowlist adds no value here
     <img
-      src={`${API_BASE_URL}/users/${encodeURIComponent(userId)}/profile-pic-url`}
+      src={`${API_BASE_URL}/users/${encodeURIComponent(userId)}/profile-pic-url${cacheBust !== undefined ? `?v=${cacheBust}` : ""}`}
       alt=""
       className={className}
       style={dimensionStyle}

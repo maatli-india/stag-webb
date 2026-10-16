@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGender } from "@/lib/hooks";
 import { ActiveRequest, fetchUserRequests } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
 const PAGE_SIZE = 10;
 const filters = [
@@ -121,7 +122,16 @@ export default function RequestsPage() {
               >
                 <span className="request-status">{getStatusLabel(request, role)}</span>
                 <h3>{request.clubName || "Club entry"}</h3>
-                <p>{getCounterpart(request, role)?.username || getCounterpart(request, role)?.name || "Entry partner"}</p>
+                <div className="request-card-user">
+                  <Avatar
+                    userId={getCounterpart(request, role)?.id}
+                    size={52}
+                    fallback={<div className="request-card-user-placeholder">{getInitials(getCounterpart(request, role)?.name || getCounterpart(request, role)?.username || "")}</div>}
+                  />
+                  <div>
+                    <strong>{getCounterpart(request, role)?.username || getCounterpart(request, role)?.name || "Entry partner"}</strong>
+                  </div>
+                </div>
                 <small>{request.datetime ? formatDate(request.datetime) : "Date to be confirmed"}</small>
               </article>
             ))}
@@ -160,4 +170,8 @@ function getCounterpart(request: ActiveRequest, role: string) {
 function formatDate(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+}
+
+function getInitials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }

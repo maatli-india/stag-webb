@@ -21,6 +21,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const [gender, setGender] = useState<"female" | "male">("male");
   const [profile, setProfile] = useState<{ name?: string }>({});
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [requestAlert, setRequestAlert] = useState<{
     requestId: string;
@@ -49,6 +50,13 @@ export function AuthShell({ children }: { children: ReactNode }) {
       fetchUserDetails(userId)
         .then(setProfile)
         .catch(() => {});
+  }, []);
+
+  // Bust header avatar cache when profile page updates the picture.
+  useEffect(() => {
+    const handler = () => setAvatarVersion(Date.now());
+    window.addEventListener("stag:avatar-updated", handler);
+    return () => window.removeEventListener("stag:avatar-updated", handler);
   }, []);
 
   useEffect(() => {
@@ -232,6 +240,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
               size={36}
               className={`profile-avatar profile-avatar-${gender}`}
               fallback={<span className={`profile-avatar profile-avatar-${gender}`}>{initials}</span>}
+              cacheBust={avatarVersion}
             />
             <span className="profile-name">
               {profile.name ? `Hi, ${profile.name.split(" ")[0]}` : "Profile"}

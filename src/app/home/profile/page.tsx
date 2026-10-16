@@ -175,13 +175,15 @@ import Avatar from "@/components/avatar";
                ) : (
                  <div className="profile-edit-avatar">{getInitials(profile?.name || name)}</div>
                )}
-               <label className="profile-photo-upload">
-                 {isPhotoLoading ? "Updating..." : "Upload photo"}
-                 <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleProfilePictureChange(event)} disabled={isPhotoLoading} />
-               </label>
-               {profile?.profilePicFileId && (
-                 <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>
-               )}
+              <div className="profile-photo-actions">
+                {profile?.profilePicFileId && (
+                  <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>
+                )}
+                <label className="profile-photo-upload">
+                  {isPhotoLoading ? "Updating..." : "Upload photo"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleProfilePictureChange(event)} disabled={isPhotoLoading} />
+                </label>
+              </div>
              </div>
            </header>
            {message && <p className="form-message form-success" role="status">{message}</p>}

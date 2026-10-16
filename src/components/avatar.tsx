@@ -13,12 +13,15 @@ export default function Avatar({
   className,
   style,
   fallback,
+  noStyle,
 }: {
   userId?: string | null;
   size?: number;
   className?: string;
   style?: React.CSSProperties;
   fallback?: React.ReactNode;
+  // When true, skips inline dimension/shape styles — use when the className fully controls sizing.
+  noStyle?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
 
@@ -27,7 +30,7 @@ export default function Avatar({
     setFailed(false);
   }, [userId]);
 
-  const dimensionStyle: React.CSSProperties = { width: size, height: size, borderRadius: "50%", objectFit: "cover", ...style };
+  const dimensionStyle: React.CSSProperties = noStyle ? {} : { width: size, height: size, borderRadius: "50%", objectFit: "cover", ...style };
 
   if (!userId || failed) {
     if (fallback) return <>{fallback}</>;

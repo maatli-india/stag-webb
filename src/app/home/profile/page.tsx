@@ -169,7 +169,7 @@ import Avatar from "@/components/avatar";
                      onClick={() => setIsPhotoExpanded((v) => !v)}
                      aria-label={isPhotoExpanded ? "Collapse profile picture" : "Enlarge profile picture"}
                    >
-                     <Avatar userId={userId} className="profile-edit-avatar profile-edit-avatar-image" />
+                     <Avatar userId={userId} className="profile-edit-avatar profile-edit-avatar-image" noStyle />
                    </button>
                  </>
                ) : (
@@ -177,10 +177,10 @@ import Avatar from "@/components/avatar";
                )}
               <div className="profile-photo-actions">
                 {profile?.profilePicFileId && (
-                  <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">×</button>
+                  <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">Remove</button>
                 )}
                 <label className="profile-photo-upload">
-                  {isPhotoLoading ? "Updating..." : "Upload photo"}
+                  {isPhotoLoading ? "Updating..." : "Upload Photo"}
                   <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void handleProfilePictureChange(event)} disabled={isPhotoLoading} />
                 </label>
               </div>

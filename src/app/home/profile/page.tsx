@@ -162,13 +162,6 @@ import Avatar from "@/components/avatar";
              <div className="profile-edit-photo-wrap">
                {profile?.profilePicFileId ? (
                  <>
-                   {isPhotoExpanded && (
-                     <div
-                       className="profile-avatar-expand-backdrop"
-                       role="presentation"
-                       onClick={() => setIsPhotoExpanded(false)}
-                     />
-                   )}
                    <button
                      ref={avatarButtonRef}
                      className={`profile-edit-avatar-button${isPhotoExpanded ? " profile-edit-avatar-button-expanded" : ""}`}

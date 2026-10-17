@@ -21,6 +21,7 @@ export default function RequestsPage() {
   const router = useRouter();
   const gender = useGender();
   const role = gender;
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [requests, setRequests] = useState<ActiveRequest[]>([]);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -33,6 +34,10 @@ export default function RequestsPage() {
       router.replace("/signup");
     }
   }, [router]);
+
+  useEffect(() => {
+    setLoggedInUserId(window.localStorage.getItem("stag_user_id"));
+  }, []);
 
   useEffect(() => {
     const userId = window.localStorage.getItem("stag_user_id");
@@ -124,12 +129,12 @@ export default function RequestsPage() {
                 <h3>{request.clubName || "Club entry"}</h3>
                 <div className="request-card-user">
                   <Avatar
-                    userId={getCounterpart(request, role)?.id}
+                    userId={getCounterpart(request, loggedInUserId)?.id}
                     size={52}
-                    fallback={<div className="request-card-user-placeholder">{getInitials(getCounterpart(request, role)?.name || getCounterpart(request, role)?.username || "")}</div>}
+                    fallback={<div className="request-card-user-placeholder">{getInitials(getCounterpart(request, loggedInUserId)?.name || getCounterpart(request, loggedInUserId)?.username || "")}</div>}
                   />
                   <div>
-                    <strong>{getCounterpart(request, role)?.username || getCounterpart(request, role)?.name || "Entry partner"}</strong>
+                    <strong>{getCounterpart(request, loggedInUserId)?.username || getCounterpart(request, loggedInUserId)?.name || "Entry partner"}</strong>
                   </div>
                 </div>
                 <small>{request.datetime ? formatDate(request.datetime) : "Date to be confirmed"}</small>
@@ -163,8 +168,8 @@ function getStatusLabel(request: ActiveRequest, role: string) {
   return "Request updated";
 }
 
-function getCounterpart(request: ActiveRequest, role: string) {
-  return role === "male" ? request.fUser : request.mUser;
+function getCounterpart(request: ActiveRequest, loggedInUserId: string | null) {
+  return request.mUser?.id === loggedInUserId ? request.fUser : request.mUser;
 }
 
 function formatDate(value: string) {

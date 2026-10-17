@@ -182,9 +182,8 @@ export default function RequestDetailsPage() {
             <section className={`request-detail-section request-detail-panel${showProfileImage ? " user-panel-expanded" : ""}`}>
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
-                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Tap to enlarge profile picture"}>
-                  <Avatar userId={counterpart?.id} fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
-                  <span className="request-profile-image-overlay">{showProfileImage ? "Tap to collapse" : "Tap to enlarge"}</span>
+                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
+                  <Avatar userId={counterpart?.id} noStyle fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
                 </button>
               </div>
               <div className="request-card-user request-detail-profile-summary">
@@ -216,7 +215,10 @@ export default function RequestDetailsPage() {
 
             <section className="request-detail-section request-detail-panel">
               <p className="request-detail-heading">REQUEST DETAILS</p>
-              {request.datetime && <div><span className="visit-time-label">Visit date and time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong>{formatDate(request.datetime)}</strong></div>}
+              {request.datetime && <>
+                <div><span>Visit date</span><strong className="visit-date-value">{formatVisitDate(request.datetime)}</strong></div>
+                <div><span>Visit time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong className="visit-date-value">{formatVisitTime(request.datetime)}</strong></div>
+              </>}
               <div><span>Status</span><strong>{getStatusLabel(request, role)}</strong></div>
               <p className="request-card-next-step">{getNextStep(request, role)}</p>
               {canCancelRequest(request) && <button className="request-cancel-action" type="button" onClick={() => setPendingSafetyAction("cancel")} disabled={isActionLoading}>Cancel request</button>}
@@ -403,4 +405,16 @@ function getCurrentCoordinates() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
     );
   });
+}
+
+function formatVisitDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+}
+
+function formatVisitTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 }

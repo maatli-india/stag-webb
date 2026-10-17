@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useGender } from "@/lib/hooks";
 import { ActiveRequest, cancelRequest, fetchBlockedUsers, fetchPlaceDetails, fetchRequestDetails, fetchUserDetails, PlaceDetails, respondToRequest, toggleBlockUser, UserProfile, verifyMeetupEntryCode } from "@/lib/api";
 import Avatar from "@/components/avatar";
@@ -46,6 +45,7 @@ export default function RequestDetailsPage() {
       return;
     }
 
+    const currentUserId = window.localStorage.getItem("stag_user_id");
     fetchRequestDetails(requestId)
       .then(async (details) => {
         setRequest(details);
@@ -56,7 +56,7 @@ export default function RequestDetailsPage() {
             setPlaceDetails(null);
           }
         }
-        const counterpart = details.mUserId === loggedInUserId ? details.fUser : details.mUser;
+        const counterpart = details.mUser?.id === currentUserId ? details.fUser : details.mUser;
         if (counterpart?.id) {
           try {
             setCounterpartProfile(await fetchUserDetails(counterpart.id));
@@ -83,7 +83,7 @@ export default function RequestDetailsPage() {
     return () => window.removeEventListener("stag-request-updated", handleRequestUpdate);
   }, [requestId]);
 
-  const counterpart = request ? (request.mUserId === loggedInUserId ? request.fUser : request.mUser) : undefined;
+  const counterpart = request ? (request.mUser?.id === loggedInUserId ? request.fUser : request.mUser) : undefined;
   const displayName = counterpartProfile?.name || counterpart?.username || counterpart?.name || "Entry partner";
 
   const toggleBlock = async () => {
@@ -325,7 +325,7 @@ function isCancelled(request: ActiveRequest) {
 function getCancellationActor(request: ActiveRequest, loggedInUserId: string | null) {
   if (!request.cancelledBy) return "Not available";
   if (request.cancelledBy === loggedInUserId) return "You";
-  const counterpart = request.mUserId === loggedInUserId ? request.fUser : request.mUser;
+  const counterpart = request.mUser?.id === loggedInUserId ? request.fUser : request.mUser;
   if (request.cancelledBy === counterpart?.id) {
     return counterpart.name || counterpart.username || "Entry partner";
   }

@@ -7,7 +7,7 @@ import { useGender } from "@/lib/hooks";
 import { ActiveRequest, fetchUserRequests } from "@/lib/api";
 import Avatar from "@/components/avatar";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 const filters = [
   { label: "All", femaleLabel: "All", value: "" },
   { label: "Response pending", femaleLabel: "Your response needed", value: "pending" },
@@ -169,7 +169,24 @@ function getCounterpart(request: ActiveRequest, role: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  if (Number.isNaN(date.getTime())) return value;
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(Math.abs(diff) / 60000);
+  const hours = Math.floor(Math.abs(diff) / 3600000);
+  const days = Math.floor(Math.abs(diff) / 86400000);
+  const timeStr = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  if (diff < 0) {
+    if (days === 0) return `Today at ${timeStr}`;
+    if (days === 1) return `Tomorrow at ${timeStr}`;
+    return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  }
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return `Yesterday at ${timeStr}`;
+  if (days < 7) return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function getInitials(name: string) {

@@ -17,12 +17,13 @@ export default function RequestDetailsPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = decodeURIComponent(params.requestId || "");
   const [request, setRequest] = useState<ActiveRequest | null>(null);
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [counterpartProfile, setCounterpartProfile] = useState<UserProfile | null>(null);
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [responseAction, setResponseAction] = useState<"accepted" | "rejected" | null>(null);
-  const [reportReason, setReportReason] = useState(reportReasons[0]);
+  const [reportReason, setReportReason] = useState("");
   const [showProfileImage, setShowProfileImage] = useState(false);
   const [pendingSafetyAction, setPendingSafetyAction] = useState<"block" | "report" | "cancel" | null>(null);
   const [cancellationConfirmed, setCancellationConfirmed] = useState(false);
@@ -37,6 +38,7 @@ export default function RequestDetailsPage() {
       router.replace("/signup");
       return;
     }
+    setLoggedInUserId(window.localStorage.getItem("stag_user_id"));
 
     if (!requestId) {
       setError("This request could not be identified.");
@@ -54,7 +56,7 @@ export default function RequestDetailsPage() {
             setPlaceDetails(null);
           }
         }
-        const counterpart = role === "male" ? details.fUser : details.mUser;
+        const counterpart = details.mUserId === loggedInUserId ? details.fUser : details.mUser;
         if (counterpart?.id) {
           try {
             setCounterpartProfile(await fetchUserDetails(counterpart.id));
@@ -81,7 +83,7 @@ export default function RequestDetailsPage() {
     return () => window.removeEventListener("stag-request-updated", handleRequestUpdate);
   }, [requestId]);
 
-  const counterpart = request ? getCounterpart(request, role) : undefined;
+  const counterpart = request ? (request.mUserId === loggedInUserId ? request.fUser : request.mUser) : undefined;
   const displayName = counterpartProfile?.name || counterpart?.username || counterpart?.name || "Entry partner";
 
   const toggleBlock = async () => {
@@ -177,12 +179,12 @@ export default function RequestDetailsPage() {
           </header>
 
           <div className="request-details-grid">
-            <section className="request-detail-section request-detail-panel">
+            <section className={`request-detail-section request-detail-panel${showProfileImage ? " user-panel-expanded" : ""}`}>
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
-                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="Tap to enlarge profile picture">
+                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Tap to enlarge profile picture"}>
                   <Avatar userId={counterpart?.id} fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
-                  <span className="request-profile-image-overlay">Tap to enlarge</span>
+                  <span className="request-profile-image-overlay">{showProfileImage ? "Tap to collapse" : "Tap to enlarge"}</span>
                 </button>
               </div>
               <div className="request-card-user request-detail-profile-summary">
@@ -193,6 +195,7 @@ export default function RequestDetailsPage() {
               <div className="request-user-actions">
                 <label className="request-report-reason">Report reason
                   <select value={reportReason} onChange={(event) => setReportReason(event.target.value)} aria-label="Report reason">
+                    <option value="" disabled>Select a reason</option>
                     {reportReasons.map((reason) => <option key={reason}>{reason}</option>)}
                   </select>
                 </label>
@@ -223,7 +226,7 @@ export default function RequestDetailsPage() {
           {isCancelled(request) && (
             <section className="request-detail-section request-detail-panel request-cancellation-panel">
               <p className="request-detail-heading">CANCELLATION DETAILS</p>
-              <div><span>Cancelled by</span><strong>{getCancellationActor(request, role)}</strong></div>
+              <div><span>Cancelled by</span><strong>{getCancellationActor(request, loggedInUserId)}</strong></div>
               {request.cancelledAt && <div><span>Cancelled on</span><strong>{formatDate(request.cancelledAt)}</strong></div>}
               <div><span>Request status</span><strong>Cancelled</strong></div>
             </section>
@@ -253,7 +256,7 @@ export default function RequestDetailsPage() {
             </section>
           )}
 
-          {role === "female" && request.status === "pending" && (
+          {role === "female" && request.status === "pending" && request.datetime && new Date(request.datetime) > new Date() && (
             <section className="request-response-panel" aria-label="Respond to request">
               <p className="request-detail-heading">RESPONSE REQUIRED</p>
               <div className="request-response-actions">
@@ -281,12 +284,6 @@ export default function RequestDetailsPage() {
         </>
       ) : (
         <div className="empty-panel"><strong>Request details unavailable.</strong><span>{error || "Please return to My Requests."}</span></div>
-      )}
-      {showProfileImage && (
-        <div className="request-profile-image-modal" role="dialog" aria-modal="true" aria-label={`${displayName} profile picture`} onClick={() => setShowProfileImage(false)}>
-          <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
-          <Avatar userId={counterpart?.id} size={320} style={{ borderRadius: 0 }} fallback={<div className="request-profile-image-modal-placeholder">{getInitials(displayName)}</div>} />
-        </div>
       )}
       {cancellationConfirmed && (
         <div className="request-safety-modal" role="presentation" onClick={() => setCancellationConfirmed(false)}>
@@ -325,13 +322,12 @@ function isCancelled(request: ActiveRequest) {
   return ["cancelled", "canceled"].includes(request.status || "");
 }
 
-function getCancellationActor(request: ActiveRequest, role: string) {
+function getCancellationActor(request: ActiveRequest, loggedInUserId: string | null) {
   if (!request.cancelledBy) return "Not available";
-  const loggedInParticipant = role === "male" ? request.mUser : request.fUser;
-  if (request.cancelledBy === loggedInParticipant?.id) return "You";
-  const counterpart = role === "male" ? request.fUser : request.mUser;
+  if (request.cancelledBy === loggedInUserId) return "You";
+  const counterpart = request.mUserId === loggedInUserId ? request.fUser : request.mUser;
   if (request.cancelledBy === counterpart?.id) {
-    return counterpart.name || counterpart.username || (role === "male" ? "Entry partner" : "Member");
+    return counterpart.name || counterpart.username || "Entry partner";
   }
   return request.cancelledBy;
 }
@@ -376,7 +372,26 @@ function calculateAge(value: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  if (Number.isNaN(date.getTime())) return value;
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(Math.abs(diff) / 60000);
+  const hours = Math.floor(Math.abs(diff) / 3600000);
+  const days = Math.floor(Math.abs(diff) / 86400000);
+  const timeStr = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  if (diff < 0) {
+    // Future date
+    if (days === 0) return `Today at ${timeStr}`;
+    if (days === 1) return `Tomorrow at ${timeStr}`;
+    return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  }
+  // Past date
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return `Yesterday at ${timeStr}`;
+  if (days < 7) return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function getCurrentCoordinates() {

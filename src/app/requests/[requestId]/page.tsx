@@ -84,6 +84,7 @@ export default function RequestDetailsPage() {
   }, [requestId]);
 
   const counterpart = request ? (request.mUser?.id === loggedInUserId ? request.fUser : request.mUser) : undefined;
+  const isPastRequest = request?.datetime ? new Date(request.datetime) < new Date() : false;
   const displayName = counterpartProfile?.name || counterpart?.username || counterpart?.name || "Entry partner";
 
   const toggleBlock = async () => {
@@ -141,7 +142,7 @@ export default function RequestDetailsPage() {
 
   const submitMeetupCode = async () => {
     const code = meetupCode.trim();
-    if (!request?.id || !/^\d{1,6}$/.test(code) || isCodeLoading) {
+    if (!request?.id || !/^\d{1,6}$/.test(code) || isCodeLoading || isPastRequest) {
       if (code && !/^\d{1,6}$/.test(code)) setError("Enter a confirmation code of up to 6 digits.");
       return;
     }
@@ -182,15 +183,21 @@ export default function RequestDetailsPage() {
             <section className={`request-detail-section request-detail-panel${showProfileImage ? " user-panel-expanded" : ""}`}>
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
-                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
-                  <Avatar userId={counterpart?.id} noStyle fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
-                </button>
+                {counterpart?.profilePicFileId ? (
+                  <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
+                    <Avatar userId={counterpart?.id} noStyle fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
+                  </button>
+                ) : (
+                  <div className="request-card-user-placeholder">{getInitials(displayName)}</div>
+                )}
               </div>
               <div className="request-card-user request-detail-profile-summary">
                 <div><strong>{displayName}</strong><span>{counterpartProfile?.selfieVerified ? "Verified profile" : "Request participant"}</span></div>
               </div>
-              {counterpartProfile?.dateOfBirth && <div><span>Age</span><strong>{calculateAge(counterpartProfile.dateOfBirth) || "-"}</strong></div>}
-              {counterpart?.entryCount !== undefined && <div><span>Entries helped</span><strong>{counterpart.entryCount}</strong></div>}
+              <div className="user-detail-stats">
+                {counterpartProfile?.dateOfBirth && <div><span>Age</span><strong>{calculateAge(counterpartProfile.dateOfBirth) || "-"}</strong></div>}
+                {counterpart?.entryCount !== undefined && <div><span>Entries helped</span><strong>{counterpart.entryCount}</strong></div>}
+              </div>
               <div className="request-user-actions">
                 <label className="request-report-reason">Report reason
                   <select value={reportReason} onChange={(event) => setReportReason(event.target.value)} aria-label="Report reason">
@@ -217,11 +224,11 @@ export default function RequestDetailsPage() {
               <p className="request-detail-heading">REQUEST DETAILS</p>
               {request.datetime && <>
                 <div><span>Visit date</span><strong className="visit-date-value">{formatVisitDate(request.datetime)}</strong></div>
-                <div><span>Visit time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong className="visit-date-value">{formatVisitTime(request.datetime)}</strong></div>
+                <div><span>Visit time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong className="visit-time-value">{formatVisitTime(request.datetime)}</strong></div>
               </>}
               <div><span>Status</span><strong>{getStatusLabel(request, role)}</strong></div>
               <p className="request-card-next-step">{getNextStep(request, role)}</p>
-              {canCancelRequest(request) && <button className="request-cancel-action" type="button" onClick={() => setPendingSafetyAction("cancel")} disabled={isActionLoading}>Cancel request</button>}
+              {canCancelRequest(request) && <button className="request-cancel-action" type="button" onClick={() => setPendingSafetyAction("cancel")} disabled={isActionLoading || isPastRequest}>Cancel request</button>}
             </section>
           </div>
 
@@ -235,7 +242,7 @@ export default function RequestDetailsPage() {
           )}
 
           {request.status === "confirmed" && (
-            <section className="request-detail-section request-detail-panel">
+            <section className="request-detail-section request-detail-panel" aria-disabled={isPastRequest || undefined}>
               {role === "male" ? <>
                 <p className="request-detail-heading">Your Entry Confirmation Code</p>
                 <p className="request-code-description">Share this code with {displayName || "the accepted member"} when you meet at the club.</p>
@@ -248,8 +255,8 @@ export default function RequestDetailsPage() {
                 <div className="request-code-entry">
                   <label htmlFor="meetup-code">Enter confirmation code</label>
                   <div className="request-code-entry-row">
-                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{1,6}" placeholder="Up to 6 digits" aria-label="Meetup or entry code" disabled={isCodeLoading} />
-                    <button className="button request-code-submit" type="button" onClick={() => void submitMeetupCode()} disabled={isCodeLoading || !meetupCode.trim()}>{isCodeLoading ? "Verifying..." : "Verify code"}</button>
+                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{1,6}" placeholder="Up to 6 digits" aria-label="Meetup or entry code" disabled={isCodeLoading || isPastRequest} />
+                    <button className="button request-code-submit" type="button" onClick={() => void submitMeetupCode()} disabled={isCodeLoading || !meetupCode.trim() || isPastRequest}>{isCodeLoading ? "Verifying..." : "Verify code"}</button>
                   </div>
                   {codeMessage && <p className="request-payment-success" role="status">{codeMessage}</p>}
                   {error && <p className="request-payment-error" role="alert">{error}</p>}
@@ -314,10 +321,6 @@ export default function RequestDetailsPage() {
       )}
     </section>
   );
-}
-
-function getCounterpart(request: ActiveRequest, role: string) {
-  return role === "male" ? request.fUser : request.mUser;
 }
 
 function isCancelled(request: ActiveRequest) {

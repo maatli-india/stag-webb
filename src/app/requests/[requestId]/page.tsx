@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useGender } from "@/lib/hooks";
 import { ActiveRequest, cancelRequest, fetchBlockedUsers, fetchPlaceDetails, fetchRequestDetails, fetchUserDetails, PlaceDetails, respondToRequest, toggleBlockUser, UserProfile, verifyMeetupEntryCode } from "@/lib/api";
@@ -24,6 +24,20 @@ export default function RequestDetailsPage() {
   const [responseAction, setResponseAction] = useState<"accepted" | "rejected" | null>(null);
   const [reportReason, setReportReason] = useState("");
   const [showProfileImage, setShowProfileImage] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Locks all 3 panel heights before image expands so the grid row never jumps.
+  const handleImageToggle = () => {
+    if (gridRef.current) {
+      const panels = Array.from(gridRef.current.children) as HTMLElement[];
+      if (!showProfileImage) {
+        panels.forEach(p => { p.style.height = `${p.offsetHeight}px`; });
+      } else {
+        panels.forEach(p => { p.style.height = ""; });
+      }
+    }
+    setShowProfileImage(v => !v);
+  };
   const [pendingSafetyAction, setPendingSafetyAction] = useState<"block" | "report" | "cancel" | null>(null);
   const [cancellationConfirmed, setCancellationConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -179,16 +193,16 @@ export default function RequestDetailsPage() {
             <span className="request-details-status">{getStatusLabel(request, role)}</span>
           </header>
 
-          <div className="request-details-grid">
+          <div className="request-details-grid" ref={gridRef}>
             <section className={`request-detail-section request-detail-panel${showProfileImage ? " user-panel-expanded" : ""}`}>
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
                 {counterpart?.profilePicFileId ? (
-                  <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage((v) => !v)} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
+                  <button className="request-profile-image-button" type="button" onClick={handleImageToggle} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
                     <Avatar userId={counterpart?.id} noStyle fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
                   </button>
                 ) : (
-                  <div className="request-card-user-placeholder">{getInitials(displayName)}</div>
+                  <div className="request-card-user-placeholder request-detail-placeholder">{getInitials(displayName)}</div>
                 )}
               </div>
               <div className="request-card-user request-detail-profile-summary">

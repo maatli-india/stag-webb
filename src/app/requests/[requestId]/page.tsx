@@ -107,7 +107,7 @@ export default function RequestDetailsPage() {
   };
 
   const cancelCurrentRequest = async () => {
-    if (!request?.id) return;
+    if (!request?.id || isPastRequest) return;
     setIsActionLoading(true);
     try {
       await cancelRequest(request.id);

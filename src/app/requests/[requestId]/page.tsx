@@ -27,16 +27,22 @@ export default function RequestDetailsPage() {
   const gridRef = useRef<HTMLDivElement>(null);
 
   // Locks all 3 panel heights before image expands so the grid row never jumps.
+  // On collapse, releases heights only after the image shrink transition finishes (250ms).
   const handleImageToggle = () => {
     if (gridRef.current) {
       const panels = Array.from(gridRef.current.children) as HTMLElement[];
       if (!showProfileImage) {
         panels.forEach(p => { p.style.height = `${p.offsetHeight}px`; });
+        setShowProfileImage(true);
       } else {
-        panels.forEach(p => { p.style.height = ""; });
+        setShowProfileImage(false);
+        setTimeout(() => {
+          panels.forEach(p => { p.style.height = ""; });
+        }, 280);
       }
+    } else {
+      setShowProfileImage(v => !v);
     }
-    setShowProfileImage(v => !v);
   };
   const [pendingSafetyAction, setPendingSafetyAction] = useState<"block" | "report" | "cancel" | null>(null);
   const [cancellationConfirmed, setCancellationConfirmed] = useState(false);

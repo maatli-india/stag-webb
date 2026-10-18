@@ -456,8 +456,8 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 .request-profile-image-button { position:relative; display:flex; align-items:center; justify-content:center; padding:0; border:0; border-radius:50%; background:transparent; cursor:pointer; overflow:hidden; }
 .request-profile-image-button:hover img,.request-profile-image-button:hover .request-card-user-placeholder { border-color:var(--lime); transform:scale(1.03); }
 .request-detail-profile-image img,.request-detail-profile-image .request-card-user-placeholder { width:100px; height:100px; border-radius:50%; object-fit:cover; background:#34302b; border:2px solid var(--red); transition:width 0.25s,height 0.25s; }
-.request-detail-profile-image .request-card-user-placeholder { display:grid; place-items:center; color:var(--ink); font:700 22px 'Space Grotesk'; }
-.request-detail-placeholder { align-self:center; width:100px; height:100px; border-radius:50%; flex-shrink:0; }
+.request-detail-profile-image .request-card-user-placeholder { display:grid; place-items:center; align-self:center; flex:0 0 100px; color:var(--ink); font:700 22px 'Space Grotesk'; }
+.request-detail-placeholder { }
 .request-detail-profile-summary { justify-content:center !important; text-align:center; border-bottom:0 !important; margin-bottom:4px !important; padding-bottom:6px !important; }
 .request-detail-profile-summary > div { align-items:center; width:100%; }
 .request-detail-profile-summary strong { font-size:18px !important; }
@@ -468,7 +468,7 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 .user-panel-expanded .request-detail-heading { flex-shrink:0; }
 .user-panel-expanded .request-detail-profile-image { flex-shrink:0; margin:4px 0 6px; }
 .user-panel-expanded .request-detail-profile-image img,
-.user-panel-expanded .request-detail-profile-image .request-card-user-placeholder { width:180px; height:180px; font-size:30px; }
+.user-panel-expanded .request-detail-profile-image .request-card-user-placeholder { width:180px; height:180px; flex:0 0 180px; font-size:30px; }
 .user-panel-expanded .request-profile-image-button { cursor:zoom-out; }
 .user-panel-expanded .request-card-user.request-detail-profile-summary { flex-shrink:0; margin-bottom:0 !important; }
 /* Stats: side by side, tighter */

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useGender } from "@/lib/hooks";
 import { ActiveRequest, cancelRequest, fetchBlockedUsers, fetchPlaceDetails, fetchRequestDetails, fetchUserDetails, PlaceDetails, respondToRequest, toggleBlockUser, UserProfile, verifyMeetupEntryCode } from "@/lib/api";
 import Avatar from "@/components/avatar";
@@ -17,13 +16,34 @@ export default function RequestDetailsPage() {
   const params = useParams<{ requestId: string }>();
   const requestId = decodeURIComponent(params.requestId || "");
   const [request, setRequest] = useState<ActiveRequest | null>(null);
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [counterpartProfile, setCounterpartProfile] = useState<UserProfile | null>(null);
   const [placeDetails, setPlaceDetails] = useState<PlaceDetails | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [responseAction, setResponseAction] = useState<"accepted" | "rejected" | null>(null);
-  const [reportReason, setReportReason] = useState(reportReasons[0]);
+  const [reportReason, setReportReason] = useState("");
   const [showProfileImage, setShowProfileImage] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Locks all 3 panel heights before image expands so the grid row never jumps.
+  // On collapse, releases heights only after the image shrink transition finishes (250ms).
+  const handleImageToggle = () => {
+    if (gridRef.current) {
+      const panels = Array.from(gridRef.current.children) as HTMLElement[];
+      if (!showProfileImage) {
+        panels.forEach(p => { p.style.height = `${p.offsetHeight}px`; });
+        setShowProfileImage(true);
+      } else {
+        setShowProfileImage(false);
+        setTimeout(() => {
+          panels.forEach(p => { p.style.height = ""; });
+        }, 280);
+      }
+    } else {
+      setShowProfileImage(v => !v);
+    }
+  };
   const [pendingSafetyAction, setPendingSafetyAction] = useState<"block" | "report" | "cancel" | null>(null);
   const [cancellationConfirmed, setCancellationConfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,6 +57,7 @@ export default function RequestDetailsPage() {
       router.replace("/signup");
       return;
     }
+    setLoggedInUserId(window.localStorage.getItem("stag_user_id"));
 
     if (!requestId) {
       setError("This request could not be identified.");
@@ -44,6 +65,7 @@ export default function RequestDetailsPage() {
       return;
     }
 
+    const currentUserId = window.localStorage.getItem("stag_user_id");
     fetchRequestDetails(requestId)
       .then(async (details) => {
         setRequest(details);
@@ -54,7 +76,7 @@ export default function RequestDetailsPage() {
             setPlaceDetails(null);
           }
         }
-        const counterpart = role === "male" ? details.fUser : details.mUser;
+        const counterpart = details.mUser?.id === currentUserId ? details.fUser : details.mUser;
         if (counterpart?.id) {
           try {
             setCounterpartProfile(await fetchUserDetails(counterpart.id));
@@ -81,7 +103,8 @@ export default function RequestDetailsPage() {
     return () => window.removeEventListener("stag-request-updated", handleRequestUpdate);
   }, [requestId]);
 
-  const counterpart = request ? getCounterpart(request, role) : undefined;
+  const counterpart = request ? (request.mUser?.id === loggedInUserId ? request.fUser : request.mUser) : undefined;
+  const isPastRequest = request?.datetime ? new Date(request.datetime) < new Date() : false;
   const displayName = counterpartProfile?.name || counterpart?.username || counterpart?.name || "Entry partner";
 
   const toggleBlock = async () => {
@@ -104,7 +127,7 @@ export default function RequestDetailsPage() {
   };
 
   const cancelCurrentRequest = async () => {
-    if (!request?.id) return;
+    if (!request?.id || isPastRequest) return;
     setIsActionLoading(true);
     try {
       await cancelRequest(request.id);
@@ -139,7 +162,7 @@ export default function RequestDetailsPage() {
 
   const submitMeetupCode = async () => {
     const code = meetupCode.trim();
-    if (!request?.id || !/^\d{1,6}$/.test(code) || isCodeLoading) {
+    if (!request?.id || !/^\d{1,6}$/.test(code) || isCodeLoading || isPastRequest) {
       if (code && !/^\d{1,6}$/.test(code)) setError("Enter a confirmation code of up to 6 digits.");
       return;
     }
@@ -176,23 +199,29 @@ export default function RequestDetailsPage() {
             <span className="request-details-status">{getStatusLabel(request, role)}</span>
           </header>
 
-          <div className="request-details-grid">
-            <section className="request-detail-section request-detail-panel">
+          <div className="request-details-grid" ref={gridRef}>
+            <section className={`request-detail-section request-detail-panel${showProfileImage ? " user-panel-expanded" : ""}`}>
               <p className="request-detail-heading">USER DETAILS</p>
               <div className="request-detail-profile-image">
-                <button className="request-profile-image-button" type="button" onClick={() => setShowProfileImage(true)} aria-label="Tap to enlarge profile picture">
-                  <Avatar userId={counterpart?.id} fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
-                  <span className="request-profile-image-overlay">Tap to enlarge</span>
-                </button>
+                {counterpart?.profilePicFileId ? (
+                  <button className="request-profile-image-button" type="button" onClick={handleImageToggle} aria-label={showProfileImage ? "Collapse profile picture" : "Enlarge profile picture"}>
+                    <Avatar userId={counterpart?.id} noStyle fallback={<div className="request-card-user-placeholder">{getInitials(displayName)}</div>} />
+                  </button>
+                ) : (
+                  <div className="request-card-user-placeholder request-detail-placeholder">{getInitials(displayName)}</div>
+                )}
               </div>
               <div className="request-card-user request-detail-profile-summary">
                 <div><strong>{displayName}</strong><span>{counterpartProfile?.selfieVerified ? "Verified profile" : "Request participant"}</span></div>
               </div>
-              {counterpartProfile?.dateOfBirth && <div><span>Age</span><strong>{calculateAge(counterpartProfile.dateOfBirth) || "-"}</strong></div>}
-              {counterpart?.entryCount !== undefined && <div><span>Entries helped</span><strong>{counterpart.entryCount}</strong></div>}
+              <div className="user-detail-stats">
+                {counterpartProfile?.dateOfBirth && <div><span>Age</span><strong>{calculateAge(counterpartProfile.dateOfBirth) || "-"}</strong></div>}
+                {counterpart?.entryCount !== undefined && <div><span>Entries helped</span><strong>{counterpart.entryCount}</strong></div>}
+              </div>
               <div className="request-user-actions">
                 <label className="request-report-reason">Report reason
                   <select value={reportReason} onChange={(event) => setReportReason(event.target.value)} aria-label="Report reason">
+                    <option value="" disabled>Select a reason</option>
                     {reportReasons.map((reason) => <option key={reason}>{reason}</option>)}
                   </select>
                 </label>
@@ -213,24 +242,27 @@ export default function RequestDetailsPage() {
 
             <section className="request-detail-section request-detail-panel">
               <p className="request-detail-heading">REQUEST DETAILS</p>
-              {request.datetime && <div><span className="visit-time-label">Visit date and time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong>{formatDate(request.datetime)}</strong></div>}
+              {request.datetime && <>
+                <div><span>Visit date</span><strong className="visit-date-value">{formatVisitDate(request.datetime)}</strong></div>
+                <div><span>Visit time <button className="visit-time-info" type="button" aria-label="About approximate visit time"><span>i</span><em>This is an approximate time and may change slightly. Once payment is confirmed, you can coordinate the exact timing.</em></button></span><strong className="visit-time-value">{formatVisitTime(request.datetime)}</strong></div>
+              </>}
               <div><span>Status</span><strong>{getStatusLabel(request, role)}</strong></div>
               <p className="request-card-next-step">{getNextStep(request, role)}</p>
-              {canCancelRequest(request) && <button className="request-cancel-action" type="button" onClick={() => setPendingSafetyAction("cancel")} disabled={isActionLoading}>Cancel request</button>}
+              {canCancelRequest(request) && <button className="request-cancel-action" type="button" onClick={() => setPendingSafetyAction("cancel")} disabled={isActionLoading || isPastRequest}>Cancel request</button>}
             </section>
           </div>
 
           {isCancelled(request) && (
             <section className="request-detail-section request-detail-panel request-cancellation-panel">
               <p className="request-detail-heading">CANCELLATION DETAILS</p>
-              <div><span>Cancelled by</span><strong>{getCancellationActor(request, role)}</strong></div>
+              <div><span>Cancelled by</span><strong>{getCancellationActor(request, loggedInUserId)}</strong></div>
               {request.cancelledAt && <div><span>Cancelled on</span><strong>{formatDate(request.cancelledAt)}</strong></div>}
               <div><span>Request status</span><strong>Cancelled</strong></div>
             </section>
           )}
 
           {request.status === "confirmed" && (
-            <section className="request-detail-section request-detail-panel">
+            <section className="request-detail-section request-detail-panel" aria-disabled={isPastRequest || undefined}>
               {role === "male" ? <>
                 <p className="request-detail-heading">Your Entry Confirmation Code</p>
                 <p className="request-code-description">Share this code with {displayName || "the accepted member"} when you meet at the club.</p>
@@ -243,8 +275,8 @@ export default function RequestDetailsPage() {
                 <div className="request-code-entry">
                   <label htmlFor="meetup-code">Enter confirmation code</label>
                   <div className="request-code-entry-row">
-                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{1,6}" placeholder="Up to 6 digits" aria-label="Meetup or entry code" disabled={isCodeLoading} />
-                    <button className="button request-code-submit" type="button" onClick={() => void submitMeetupCode()} disabled={isCodeLoading || !meetupCode.trim()}>{isCodeLoading ? "Verifying..." : "Verify code"}</button>
+                    <input id="meetup-code" value={meetupCode} onChange={(event) => setMeetupCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{1,6}" placeholder="Up to 6 digits" aria-label="Meetup or entry code" disabled={isCodeLoading || isPastRequest} />
+                    <button className="button request-code-submit" type="button" onClick={() => void submitMeetupCode()} disabled={isCodeLoading || !meetupCode.trim() || isPastRequest}>{isCodeLoading ? "Verifying..." : "Verify code"}</button>
                   </div>
                   {codeMessage && <p className="request-payment-success" role="status">{codeMessage}</p>}
                   {error && <p className="request-payment-error" role="alert">{error}</p>}
@@ -253,7 +285,7 @@ export default function RequestDetailsPage() {
             </section>
           )}
 
-          {role === "female" && request.status === "pending" && (
+          {role === "female" && request.status === "pending" && request.datetime && new Date(request.datetime) > new Date() && (
             <section className="request-response-panel" aria-label="Respond to request">
               <p className="request-detail-heading">RESPONSE REQUIRED</p>
               <div className="request-response-actions">
@@ -281,12 +313,6 @@ export default function RequestDetailsPage() {
         </>
       ) : (
         <div className="empty-panel"><strong>Request details unavailable.</strong><span>{error || "Please return to My Requests."}</span></div>
-      )}
-      {showProfileImage && (
-        <div className="request-profile-image-modal" role="dialog" aria-modal="true" aria-label={`${displayName} profile picture`} onClick={() => setShowProfileImage(false)}>
-          <button type="button" aria-label="Close profile picture" onClick={() => setShowProfileImage(false)}>×</button>
-          <Avatar userId={counterpart?.id} size={320} style={{ borderRadius: 0 }} fallback={<div className="request-profile-image-modal-placeholder">{getInitials(displayName)}</div>} />
-        </div>
       )}
       {cancellationConfirmed && (
         <div className="request-safety-modal" role="presentation" onClick={() => setCancellationConfirmed(false)}>
@@ -317,21 +343,16 @@ export default function RequestDetailsPage() {
   );
 }
 
-function getCounterpart(request: ActiveRequest, role: string) {
-  return role === "male" ? request.fUser : request.mUser;
-}
-
 function isCancelled(request: ActiveRequest) {
   return ["cancelled", "canceled"].includes(request.status || "");
 }
 
-function getCancellationActor(request: ActiveRequest, role: string) {
+function getCancellationActor(request: ActiveRequest, loggedInUserId: string | null) {
   if (!request.cancelledBy) return "Not available";
-  const loggedInParticipant = role === "male" ? request.mUser : request.fUser;
-  if (request.cancelledBy === loggedInParticipant?.id) return "You";
-  const counterpart = role === "male" ? request.fUser : request.mUser;
+  if (request.cancelledBy === loggedInUserId) return "You";
+  const counterpart = request.mUser?.id === loggedInUserId ? request.fUser : request.mUser;
   if (request.cancelledBy === counterpart?.id) {
-    return counterpart.name || counterpart.username || (role === "male" ? "Entry partner" : "Member");
+    return counterpart.name || counterpart.username || "Entry partner";
   }
   return request.cancelledBy;
 }
@@ -376,7 +397,26 @@ function calculateAge(value: string) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  if (Number.isNaN(date.getTime())) return value;
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(Math.abs(diff) / 60000);
+  const hours = Math.floor(Math.abs(diff) / 3600000);
+  const days = Math.floor(Math.abs(diff) / 86400000);
+  const timeStr = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  if (diff < 0) {
+    // Future date
+    if (days === 0) return `Today at ${timeStr}`;
+    if (days === 1) return `Tomorrow at ${timeStr}`;
+    return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  }
+  // Past date
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return `Yesterday at ${timeStr}`;
+  if (days < 7) return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function getCurrentCoordinates() {
@@ -388,4 +428,16 @@ function getCurrentCoordinates() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
     );
   });
+}
+
+function formatVisitDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+}
+
+function formatVisitTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
 }

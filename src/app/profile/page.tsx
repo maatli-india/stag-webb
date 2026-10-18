@@ -16,12 +16,14 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [isPhotoLoading, setIsPhotoLoading] = useState(false);
+  const [avatarVersion, setAvatarVersion] = useState(0);
   const [isPhotoExpanded, setIsPhotoExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isOnBreak, setIsOnBreak] = useState(false);
   const [isAvailabilitySaving, setIsAvailabilitySaving] = useState(false);
   const [showBreakConfirm, setShowBreakConfirm] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const avatarButtonRef = useRef<HTMLButtonElement>(null);
@@ -95,6 +97,9 @@ export default function ProfilePage() {
       }
       const updated = await updateUserDetails(userId, { name, email, gender: profile?.gender || gender, phone: profile?.phone || "", dateOfBirth, profilePicId: fileId });
       setProfile((current) => ({ ...current, ...updated }));
+      const v = Date.now();
+      setAvatarVersion(v);
+      window.dispatchEvent(new CustomEvent("stag:avatar-updated", { detail: { v } }));
       setMessage("Profile picture updated successfully.");
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "We could not upload your profile picture. Please try again.");
@@ -133,18 +138,21 @@ export default function ProfilePage() {
       setError("This profile picture cannot be removed here. Please upload a new picture first.");
       return;
     }
-    if (!window.confirm("Remove your profile picture?")) return;
     setIsPhotoLoading(true);
     setError("");
     setMessage("");
     try {
       await deleteProfilePicture();
       setProfile((current) => (current ? { ...current, profilePicFileId: undefined } : current));
+      const v = Date.now();
+      setAvatarVersion(v);
+      window.dispatchEvent(new CustomEvent("stag:avatar-updated", { detail: { v } }));
       setMessage("Profile picture removed successfully.");
     } catch {
       setError("We could not remove your profile picture. Please try again.");
     } finally {
       setIsPhotoLoading(false);
+      setShowRemoveConfirm(false);
     }
   };
 
@@ -169,7 +177,7 @@ export default function ProfilePage() {
                     onClick={() => setIsPhotoExpanded((v) => !v)}
                     aria-label={isPhotoExpanded ? "Collapse profile picture" : "Enlarge profile picture"}
                   >
-                    <Avatar userId={userId} className="profile-edit-avatar profile-edit-avatar-image" noStyle />
+                     <Avatar userId={userId} className="profile-edit-avatar profile-edit-avatar-image" noStyle cacheBust={avatarVersion} />
                   </button>
                 </>
               ) : (
@@ -177,7 +185,7 @@ export default function ProfilePage() {
               )}
               <div className="profile-photo-actions">
                 {profile?.profilePicFileId && (
-                  <button className="profile-photo-delete" type="button" onClick={() => void removeProfilePicture()} disabled={isPhotoLoading} aria-label="Remove profile picture">Remove</button>
+                  <button className="profile-photo-delete" type="button" onClick={() => setShowRemoveConfirm(true)} disabled={isPhotoLoading} aria-label="Remove profile picture">Remove</button>
                 )}
                 <label className="profile-photo-upload">
                   {isPhotoLoading ? "Updating..." : "Upload Photo"}
@@ -219,6 +227,19 @@ export default function ProfilePage() {
                 <div className="action-modal-buttons">
                   <button className="button button-primary" type="button" disabled={isAvailabilitySaving} onClick={() => { setShowBreakConfirm(false); void updateAvailability(true); }}>{isAvailabilitySaving ? "Updating..." : "Take a break"}</button>
                   <button className="button button-quiet" type="button" onClick={() => setShowBreakConfirm(false)}>Cancel</button>
+                </div>
+              </section>
+            </div>
+          )}
+          {showRemoveConfirm && (
+            <div className="action-modal-backdrop" role="presentation" onClick={() => setShowRemoveConfirm(false)}>
+              <section className="action-modal" role="dialog" aria-modal="true" aria-labelledby="remove-pic-title" onClick={(event) => event.stopPropagation()}>
+                <p className="eyebrow">PROFILE PICTURE</p>
+                <h2 id="remove-pic-title">Remove your photo?</h2>
+                <p className="action-modal-copy">Your profile picture will be removed. Your initials will be shown to others until you upload a new one.</p>
+                <div className="action-modal-buttons">
+                  <button className="button button-primary" type="button" disabled={isPhotoLoading} onClick={() => void removeProfilePicture()}>{isPhotoLoading ? "Removing..." : "Yes, remove"}</button>
+                  <button className="button button-quiet" type="button" onClick={() => setShowRemoveConfirm(false)}>Cancel</button>
                 </div>
               </section>
             </div>

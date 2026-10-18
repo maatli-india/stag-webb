@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useGender } from "@/lib/hooks";
 import { ActiveRequest, fetchUserRequests } from "@/lib/api";
+import Avatar from "@/components/avatar";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 const filters = [
   { label: "All", femaleLabel: "All", value: "" },
   { label: "Response pending", femaleLabel: "Your response needed", value: "pending" },
@@ -20,6 +21,7 @@ export default function RequestsPage() {
   const router = useRouter();
   const gender = useGender();
   const role = gender;
+  const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
   const [requests, setRequests] = useState<ActiveRequest[]>([]);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -32,6 +34,10 @@ export default function RequestsPage() {
       router.replace("/signup");
     }
   }, [router]);
+
+  useEffect(() => {
+    setLoggedInUserId(window.localStorage.getItem("stag_user_id"));
+  }, []);
 
   useEffect(() => {
     const userId = window.localStorage.getItem("stag_user_id");
@@ -121,7 +127,16 @@ export default function RequestsPage() {
               >
                 <span className="request-status">{getStatusLabel(request, role)}</span>
                 <h3>{request.clubName || "Club entry"}</h3>
-                <p>{getCounterpart(request, role)?.username || getCounterpart(request, role)?.name || "Entry partner"}</p>
+                <div className="request-card-user">
+                  <Avatar
+                    userId={getCounterpart(request, loggedInUserId)?.id}
+                    size={52}
+                    fallback={<div className="request-card-user-placeholder">{getInitials(getCounterpart(request, loggedInUserId)?.name || getCounterpart(request, loggedInUserId)?.username || "")}</div>}
+                  />
+                  <div>
+                    <strong>{getCounterpart(request, loggedInUserId)?.username || getCounterpart(request, loggedInUserId)?.name || "Entry partner"}</strong>
+                  </div>
+                </div>
                 <small>{request.datetime ? formatDate(request.datetime) : "Date to be confirmed"}</small>
               </article>
             ))}
@@ -153,11 +168,32 @@ function getStatusLabel(request: ActiveRequest, role: string) {
   return "Request updated";
 }
 
-function getCounterpart(request: ActiveRequest, role: string) {
-  return role === "male" ? request.fUser : request.mUser;
+function getCounterpart(request: ActiveRequest, loggedInUserId: string | null) {
+  return request.mUser?.id === loggedInUserId ? request.fUser : request.mUser;
 }
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+  if (Number.isNaN(date.getTime())) return value;
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(Math.abs(diff) / 60000);
+  const hours = Math.floor(Math.abs(diff) / 3600000);
+  const days = Math.floor(Math.abs(diff) / 86400000);
+  const timeStr = date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  if (diff < 0) {
+    if (days === 0) return `Today at ${timeStr}`;
+    if (days === 1) return `Tomorrow at ${timeStr}`;
+    return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  }
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  if (hours < 24) return `${hours} hr${hours > 1 ? "s" : ""} ago`;
+  if (days === 1) return `Yesterday at ${timeStr}`;
+  if (days < 7) return date.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }) + ` at ${timeStr}`;
+  return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function getInitials(name: string) {
+  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 }

@@ -13,20 +13,47 @@ import {
   verifyPaymentFromUI,
 } from "@/lib/api";
 
+type BoltHandlers = {
+  responseHandler: (b: { response: { txnStatus: string } }) => void;
+  catchException: (err: unknown) => void;
+};
+
 // PayU bolt.js injects itself onto window — typed minimally for what we use.
-// hash in launch data is a callback: bolt calls it with hashName, you return the signed hash.
 declare global {
   interface Window {
     bolt?: {
-      launch: (
-        data: Record<string, unknown>,
-        handlers: {
-          responseHandler: (b: { response: { txnStatus: string } }) => void;
-          catchException: (err: unknown) => void;
-        },
-      ) => void;
+      launch: (data: Record<string, unknown>, handlers: BoltHandlers) => void;
     };
   }
+}
+
+let detachBoltListeners: (() => void) | null = null;
+
+// bolt.launch adds a window "message" listener and removes it only on close/cancel. After a
+// bolt-ohFish error (e.g. bad hash) it stays attached: the UAT SDK then throws "Cannot set
+// properties of null (setting 'scrolling')" on every postMessage, and on retry the stale
+// listener fires the previous order's handlers. Capture it during launch so we can detach it.
+function launchBolt(data: Record<string, unknown>, handlers: BoltHandlers) {
+  detachBoltListeners?.();
+  const captured: EventListenerOrEventListenerObject[] = [];
+  const originalAdd = window.addEventListener;
+  window.addEventListener = ((
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions,
+  ) => {
+    if (type === "message") captured.push(listener);
+    originalAdd.call(window, type, listener, options);
+  }) as typeof window.addEventListener;
+  try {
+    window.bolt?.launch(data, handlers);
+  } finally {
+    window.addEventListener = originalAdd;
+  }
+  detachBoltListeners = () => {
+    captured.forEach((listener) => window.removeEventListener("message", listener, false));
+    detachBoltListeners = null;
+  };
 }
 
 // Loads bolt.js once per environment; resolves immediately if already loaded.
@@ -131,31 +158,48 @@ export default function SubscriptionsPage() {
       // Step 2: pre-fetch hash from BE — bolt.js UAT requires a static string, not a callback
       const { hash } = await fetchPayuHash(order.orderId, "payment_hash");
 
+      const boltParams: Record<string, string> = {
+        key: order.keyId,
+        txnid: order.payuTxnId,
+        // toFixed(2) required by PayU; guard against undefined amount
+        amount: Number(order.amount ?? 0).toFixed(2),
+        // BE signs strings.TrimSpace(name/email); untrimmed values cause a PayU hash mismatch
+        firstname: userRef.current.name.trim(),
+        email: userRef.current.email.trim(),
+        phone: userRef.current.phone,
+        productinfo: order.productInfo || "STAG subscription",
+        // udf1/udf2/udf5 must match what BE used when signing the hash
+        udf1: order.entityType || "",
+        udf2: order.entityId || "",
+        ...(order.udf5 ? { udf5: order.udf5 } : {}),
+        surl: order.surl || "",
+        furl: order.furl || "",
+        hash: hash || "",
+      };
+
+      // bolt.js rejects these when empty with only a generic error; fail fast with a clear message.
+      const missing = ["key", "txnid", "hash", "firstname", "productinfo", "surl", "furl"].filter((k) => !boltParams[k]);
+      if (missing.length) {
+        setError(
+          missing.includes("firstname")
+            ? "Please add your name in your profile before buying a plan."
+            : "Could not start payment. Please try again.",
+        );
+        console.error("PayU checkout params missing:", missing.join(", "));
+        setPurchasingId(null);
+        return;
+      }
+
       // Step 3: load bolt.js (idempotent — skipped if already on window)
       await loadBoltScript(!!order.isProduction);
       if (!window.bolt) throw new Error("bolt undefined after load");
 
       // Step 4: open checkout modal
-      window.bolt.launch(
-        {
-          key: order.keyId,
-          txnid: order.payuTxnId,
-          // toFixed(2) required by PayU; guard against undefined amount
-          amount: Number(order.amount ?? 0).toFixed(2),
-          firstname: userRef.current.name,
-          email: userRef.current.email,
-          phone: userRef.current.phone,
-          productinfo: order.productInfo || "STAG subscription",
-          // udf1/udf2/udf5 must match what BE used when signing the hash
-          udf1: order.entityType || "",
-          udf2: order.entityId || "",
-          ...(order.udf5 ? { udf5: order.udf5 } : {}),
-          surl: order.surl,
-          furl: order.furl,
-          hash,
-        },
+      launchBolt(
+        boltParams,
         {
           responseHandler: (b) => {
+            setTimeout(() => detachBoltListeners?.(), 0);
             const ok = b.response.txnStatus?.toUpperCase() === "SUCCESS";
             const cancelled = b.response.txnStatus?.toUpperCase() === "CANCEL";
             // Step 5: inform BE of outcome — credits are granted by webhook, not this call
@@ -170,8 +214,11 @@ export default function SubscriptionsPage() {
             setPurchasingId(null);
           },
           catchException: (err: unknown) => {
+            setTimeout(() => detachBoltListeners?.(), 0);
             console.error("PayU catchException:", err);
-            setPaymentNote({ text: "Something went wrong with the payment. Please try again.", ok: false });
+            // PayU messages contain HTML (e.g. "<b>hash</b>"); show plain text.
+            const message = (err as { message?: string } | null)?.message?.replace(/<[^>]*>/g, "").trim();
+            setPaymentNote({ text: message || "Something went wrong with the payment. Please try again.", ok: false });
             setPurchasingId(null);
           },
         },

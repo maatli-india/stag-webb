@@ -674,3 +674,6 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 @supports (padding: env(safe-area-inset-bottom)) {
 	.app-shell { padding-bottom:env(safe-area-inset-bottom); }
 }
+
+/* PayU UAT bolt.js loader points at "null/static/kiwi/images/oval.svg" (404); prod SDK sets no image. */
+#imageLoaderImg { background-image:none !important; }

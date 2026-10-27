@@ -557,6 +557,7 @@ export type PaymentOrder = {
   payuTxnId?: string;
   productInfo?: string;
   surl?: string;
+  udf5?: string; // service routing tag; pass verbatim in checkout hash and bolt.js params
 };
 
 // Creates a gateway order. For subscriptions, amount/currency are ignored — BE uses plan breakdown.

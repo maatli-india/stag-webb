@@ -146,9 +146,10 @@ export default function SubscriptionsPage() {
           email: userRef.current.email,
           phone: userRef.current.phone,
           productinfo: order.productInfo || "STAG subscription",
-          // udf1/udf2 must match what BE used when signing the hash
+          // udf1/udf2/udf5 must match what BE used when signing the hash
           udf1: order.entityType || "",
           udf2: order.entityId || "",
+          ...(order.udf5 ? { udf5: order.udf5 } : {}),
           surl: order.surl,
           furl: order.furl,
           hash,

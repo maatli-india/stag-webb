@@ -21,21 +21,6 @@ function statusTag(status: string): { label: string; className: string } {
   }
 }
 
-function getTimeUntilMidnightIST(): string {
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
-  const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
-  const tomorrow = new Date(istTime);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  
-  const msUntilMidnight = tomorrow.getTime() - istTime.getTime();
-  const hours = Math.floor(msUntilMidnight / (1000 * 60 * 60));
-  const minutes = Math.floor((msUntilMidnight % (1000 * 60 * 60)) / (1000 * 60));
-  
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-}
 
 function PlanCard({ plan, className }: { plan: UserSubscription; className?: string }) {
   const total = Math.max(Number(plan.creditCount || 0), 0);
@@ -44,13 +29,15 @@ function PlanCard({ plan, className }: { plan: UserSubscription; className?: str
   const tag = statusTag(plan.status || "");
 
   return (
-    <article className={`credit-plan ${className || ""}`}>
+    <article className={`credit-plan ${className || ""}`} data-status={plan.status || ""}>
+      <div className="credit-plan-ribbon" data-status={plan.status || ""}>
+        <span className="credit-plan-tag-hover">{tag.label}</span>
+      </div>
       <div className="credit-plan-top">
         <div>
           <h3>{plan.name || "Request credit plan"}</h3>
           <p>{plan.neverExpires || !plan.expiresAt ? "No expiry" : `Valid until ${new Date(plan.expiresAt).toLocaleDateString("en-IN")}`}</p>
         </div>
-        <span className={`credit-plan-tag ${tag.className}`}>{tag.label}</span>
       </div>
       <div className="credit-plan-stats">
         <span>CONSUMED <b>{consumed}</b></span>
@@ -123,7 +110,7 @@ export default function RequestCreditsPage() {
             <div>
               <span>USED TODAY</span>
               <strong>{used}</strong>
-              <small>of {allowance} daily free requests • resets in {getTimeUntilMidnightIST()}</small>
+              <small>of {allowance} daily free requests</small>
             </div>
             <div>
               <span>PLANS OWNED</span>

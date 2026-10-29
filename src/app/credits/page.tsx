@@ -21,6 +21,22 @@ function statusTag(status: string): { label: string; className: string } {
   }
 }
 
+function getTimeUntilMidnightIST(): string {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const istTime = new Date(now.getTime() + istOffset - now.getTimezoneOffset() * 60 * 1000);
+  const tomorrow = new Date(istTime);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  
+  const msUntilMidnight = tomorrow.getTime() - istTime.getTime();
+  const hours = Math.floor(msUntilMidnight / (1000 * 60 * 60));
+  const minutes = Math.floor((msUntilMidnight % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
 function PlanCard({ plan, className }: { plan: UserSubscription; className?: string }) {
   const total = Math.max(Number(plan.creditCount || 0), 0);
   const left = Math.max(Number(plan.creditsLeft || 0), 0);
@@ -107,7 +123,7 @@ export default function RequestCreditsPage() {
             <div>
               <span>USED TODAY</span>
               <strong>{used}</strong>
-              <small>of {allowance} daily free requests</small>
+              <small>of {allowance} daily free requests • resets in {getTimeUntilMidnightIST()}</small>
             </div>
             <div>
               <span>PLANS OWNED</span>

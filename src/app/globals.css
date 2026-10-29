@@ -217,8 +217,7 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 @media (max-width:850px) { .rewards-heading,.rewards-section-heading { align-items:start; flex-direction:column; }.rewards-overview,.rewards-lower-grid { grid-template-columns:1fr; }.merchandise-grid { grid-template-columns:1fr 1fr; } }
 @media (max-width:520px) { .reward-progress-card,.reward-rank-card { padding:22px 18px; }.reward-levels { gap:4px; }.reward-levels b { font-size:10px; }.merchandise-grid { grid-template-columns:1fr; }.merchandise-image { height:220px; }.rewards-section { margin-top:45px; }.reward-address-form { grid-template-columns:1fr; }.reward-address-form label:nth-child(3),.reward-address-form label:nth-child(4),.reward-address-form button { grid-column:auto; } }
 .credits-page,.subscriptions-page { padding-bottom:140px; }.credits-overview { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; margin-top:36px; }.credits-overview > div { display:grid; gap:8px; border:1px solid var(--line); background:var(--panel); padding:22px; }.credits-overview span { color:var(--muted); font:700 10px 'Space Grotesk'; letter-spacing:.1em; }.credits-overview strong { color:var(--lime); font:700 42px 'Space Grotesk'; line-height:1; }.credits-overview small { color:var(--muted); font-size:11px; }.credits-overview .button { align-self:center; white-space:nowrap; }.credits-section { width:min(100%,820px); margin-top:58px; }.credit-plan-list { display:grid; gap:12px; }.credit-plan { border:1px solid var(--line); background:var(--panel); padding:22px; }.credit-plan-old { opacity:.7; }.credit-plan-top,.credit-plan-stats { display:flex; justify-content:space-between; gap:18px; }.credit-plan-top h3 { font-size:20px; }.credit-plan-top p,.credit-plan small { color:var(--muted); font-size:12px; margin:7px 0 0; }.credit-plan-top > strong { color:var(--red); font:700 10px 'Space Grotesk'; }.credit-plan-stats { margin-top:22px; }.credit-plan-stats span { color:var(--muted); font-size:10px; }.credit-plan-stats b { display:block; color:var(--ink); font:700 21px 'Space Grotesk'; margin-top:5px; }.credit-plan-stats span:last-child { text-align:right; }.credit-plan-stats span:last-child b { color:var(--lime); }.credit-plan-track { height:7px; background:#34302b; margin-top:18px; }.credit-plan-track span { display:block; height:100%; background:var(--red); }.credit-plan small { display:block; margin-top:8px; }
-.credit-plan { position:relative; overflow:hidden; border:1px solid var(--line); background:var(--panel); padding:22px; transition:all .3s ease; }
-.credit-plan:hover { transform:translateY(-8px) scale(1.02); box-shadow:0 20px 40px rgba(0,0,0,.4), 0 0 30px rgba(102,114,47,.15); }
+.credit-plan { position:relative; overflow:hidden; }
 .credit-plan-ribbon { position:absolute; top:0; right:0; width:0; height:0; opacity:0; transition:opacity .3s cubic-bezier(.34,.1,.68,.55); }
 .credit-plan:hover .credit-plan-ribbon { opacity:1; }
 .credit-plan-ribbon::before { content:''; position:absolute; top:0; right:0; width:0; height:0; border-style:solid; border-width:0 60px 60px 0; transition:border-color .3s ease; }
@@ -227,13 +226,13 @@ em { color:var(--lime); font-style:normal; }.lede { color:var(--muted); font-siz
 .credit-plan[data-status="exhausted"] .credit-plan-ribbon::before { border-color:transparent #888 transparent transparent; }
 .credit-plan[data-status="expired"] .credit-plan-ribbon::before { border-color:transparent #ff6b6b transparent transparent; }
 .credit-plan-tag-hover { position:absolute; top:8px; right:8px; font:700 8px 'Space Grotesk'; text-transform:uppercase; color:#fff; }
+.credit-plan[data-status="live"] .credit-plan-tag-hover { color:#1a1a1a; }
 .credit-plan[data-status="scheduled"] .credit-plan-tag-hover { color:#1a1a1a; }
 .credit-plan[data-status="exhausted"] .credit-plan-tag-hover { color:#fff; }
 .credit-plan-list-vertical { display:grid; gap:12px; }
 .credit-plan-list-vertical .credit-plan { width:320px; }
 .credit-plan-list-horizontal { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; }
 .credit-plan-list-horizontal .credit-plan { flex-shrink:0; width:320px; }
-@media (max-width:520px) { .credit-plan { padding:18px; } .credit-plan:hover { transform:translateY(-6px) scale(1.01); } }
 .credits-divider { position:relative; margin:48px 0 12px; text-align:center; }
 .credits-divider::before { content:''; position:absolute; top:50%; left:0; right:0; height:1px; background:var(--line); }
 .credits-divider span { position:relative; display:inline-block; background:var(--bg); padding:0 12px; color:var(--muted); font-size:12px; }
